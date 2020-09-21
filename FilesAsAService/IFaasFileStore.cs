@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace FilesAsAService
 {
-    public interface IFaasFileStore
+    public interface IFaasFileStore : IDisposable
     {
         Task CreateAsync(Guid fileId, Stream stream, CancellationToken cancellationToken);
         

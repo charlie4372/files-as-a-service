@@ -80,7 +80,30 @@ namespace FilesAsAService.UnitTests.InMemory
             Assert.IsNull(header.DateDeletedUtc);
             Assert.AreEqual(FaasFileHeaderStatus.Active, header.Status);
         }
+        
+        [Test]
+        public void DoesCompleteCreateAsyncThrowOnInvalidId()
+        {
+            var catalogue = CreateCatalogue();
 
+            Assert.ThrowsAsync<FaasFileNotFoundException>(async () =>
+            {
+                var hash = _testDataGenerator.CreateRandomByteArray(16);
+                await catalogue.CompleteCreateAsync(Guid.NewGuid(), 100, hash, CancellationToken.None);
+            });
+        }
+        
+        [Test]
+        public async Task DoesCompleteCreateAsyncThrowOnActiveHeader()
+        {
+            var catalogue = CreateCatalogue();
+
+            var creatingHeader = await catalogue.StartCreateAsync("test.txt", CancellationToken.None);
+
+            var hash = _testDataGenerator.CreateRandomByteArray(16);
+            await catalogue.CompleteCreateAsync(creatingHeader.Id, 100, hash, CancellationToken.None);
+            Assert.ThrowsAsync<FaasInvalidOperationException>(async () => { await catalogue.CompleteCreateAsync(creatingHeader.Id, 100, hash, CancellationToken.None); });
+        }
 
         [Test]
         public async Task DoesCancelCreateAsyncDeleteHeader()
@@ -92,6 +115,26 @@ namespace FilesAsAService.UnitTests.InMemory
             await catalogue.CancelCreateAsync(creatingHeader.Id, CancellationToken.None);
             var header = await catalogue.GetAsync(creatingHeader.Id, CancellationToken.None);
             Assert.IsNull(header);
+        }
+
+        [Test]
+        public void DoesCancelCreateAsyncThrowOnInvalidId()
+        {
+            var catalogue = CreateCatalogue();
+
+            Assert.ThrowsAsync<FaasFileNotFoundException>(async () => { await catalogue.CancelCreateAsync(Guid.NewGuid(), CancellationToken.None); });
+        }
+        
+        [Test]
+        public async Task DoesCancelCreateAsyncThrowOnActiveHeader()
+        {
+            var catalogue = CreateCatalogue();
+
+            var creatingHeader = await catalogue.StartCreateAsync("test.txt", CancellationToken.None);
+
+            var hash = _testDataGenerator.CreateRandomByteArray(16);
+            await catalogue.CompleteCreateAsync(creatingHeader.Id, 100, hash, CancellationToken.None);
+            Assert.ThrowsAsync<FaasInvalidOperationException>(async () => { await catalogue.CancelCreateAsync(creatingHeader.Id, CancellationToken.None); });
         }
     }
 }

@@ -19,9 +19,9 @@ namespace FilesAsAService.UnitTests.InMemory
         [Test]
         public async Task DoesReadAsyncGetFile()
         {
-            using var inputStream = _testDataGenerator.CreateRandomStream(1024);
+            await using var inputStream = _testDataGenerator.CreateRandomStream(1024);
 
-            var fileStore = CreateFileStore();
+            using var fileStore = CreateFileStore();
             var id = Guid.NewGuid();
 
             await fileStore.CreateAsync(id, inputStream, CancellationToken.None);
@@ -36,9 +36,9 @@ namespace FilesAsAService.UnitTests.InMemory
          [Test]
         public async Task DoesCreateThrowWhenIdExists()
         {
-            using var inputStream = _testDataGenerator.CreateRandomStream(1024);
+            await using var inputStream = _testDataGenerator.CreateRandomStream(1024);
 
-            var fileStore = CreateFileStore();
+            using var fileStore = CreateFileStore();
             var id = Guid.NewGuid();
 
             await fileStore.CreateAsync(id, inputStream, CancellationToken.None);
@@ -58,7 +58,7 @@ namespace FilesAsAService.UnitTests.InMemory
 
             Assert.ThrowsAsync<FaasFileNotFoundException>(async () =>
             {
-                using var readStream = await fileStore.ReadAsync(id, CancellationToken.None);
+                await using var readStream = await fileStore.ReadAsync(id, CancellationToken.None);
             });
         }
     }

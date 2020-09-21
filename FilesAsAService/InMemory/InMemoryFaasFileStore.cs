@@ -75,5 +75,23 @@ namespace FilesAsAService.InMemory
                 throw;
             }
         }
+
+        public void Dispose()
+        {
+            // Dispose of unmanaged resources.
+            Dispose(true);
+            // Suppress finalization.
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _lock.Dispose();
+                
+                _files.Clear();
+            }
+        }
     }
 }

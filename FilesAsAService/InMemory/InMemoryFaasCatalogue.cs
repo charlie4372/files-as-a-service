@@ -92,6 +92,9 @@ namespace FilesAsAService.InMemory
                 if (header == null)
                     throw new FaasFileNotFoundException();
 
+                if (header.Status != FaasFileHeaderStatus.Creating)
+                    throw new FaasInvalidOperationException();
+
                 header.Length = length;
                 header.Status = FaasFileHeaderStatus.Active;
 
@@ -111,6 +114,9 @@ namespace FilesAsAService.InMemory
                 var header = await GetNoLock(id, cancellationToken);
                 if (header == null)
                     throw new FaasFileNotFoundException();
+
+                if (header.Status != FaasFileHeaderStatus.Creating)
+                    throw new FaasInvalidOperationException();
 
                 _data[_idIndex[id]] = null;
                 _idIndex.Remove(id);
