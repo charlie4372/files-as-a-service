@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -9,8 +7,8 @@ namespace FilesAsAService.UnitTests
     [TestFixture]
     public class HashGeneratorStreamProxyTests
     {
-        private Random _random = new Random();
-
+        private TestDataGenerator _testDataGenerator = new TestDataGenerator();
+        
         [TestCase(0, 100)]
         [TestCase(1, 100)]
         [TestCase(100, 100)]
@@ -20,7 +18,7 @@ namespace FilesAsAService.UnitTests
         [TestCase(300, 100)]
         public async Task DoesReadAsyncCountNumberOfBytes(int size, int blockSize)
         {
-            using var input = CreateRandomStream(size);
+            using var input = _testDataGenerator.CreateRandomStream(size);
             using var controlHashGenerator = new SHA512Managed();
 
             var controlHash = controlHashGenerator.ComputeHash(input);
@@ -49,7 +47,7 @@ namespace FilesAsAService.UnitTests
         [TestCase(300, 100)]
         public void DoesReadCountNumberOfBytes(int size, int blockSize)
         {
-            using var input = CreateRandomStream(size);
+            using var input = _testDataGenerator.CreateRandomStream(size);
             using var controlHashGenerator = new SHA512Managed();
 
             var controlHash = controlHashGenerator.ComputeHash(input);
@@ -68,13 +66,5 @@ namespace FilesAsAService.UnitTests
 
             Assert.AreEqual(controlHash, hash);
         }
-    
-        private Stream CreateRandomStream(int size)
-        {
-            var buffer = new byte[size];
-            _random.NextBytes(buffer);
-
-            return new MemoryStream(buffer);
-        }   
     }
 }

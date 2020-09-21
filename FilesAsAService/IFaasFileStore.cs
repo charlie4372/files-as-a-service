@@ -11,6 +11,6 @@ namespace FilesAsAService
         
         Task<Stream> ReadAsync(Guid fileId, CancellationToken cancellationToken);
 
-        Task ReplaceAsync(Guid fileId, Stream stream, CancellationToken cancellationToken);
+        // Task ReplaceAsync(Guid fileId, Stream stream, CancellationToken cancellationToken);
     }
 }

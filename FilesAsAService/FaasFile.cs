@@ -18,23 +18,6 @@ namespace FilesAsAService
             _fileStore = fileStore ?? throw new ArgumentNullException(nameof(fileStore));
             _header = header ?? throw new ArgumentNullException(nameof(header));
         }
-        
-        /// <summary>
-        /// Appends a stream to the file.
-        /// </summary>
-        /// <returns>The number of bytes appended.</returns>
-        public async Task WriteAsync(Stream stream, CancellationToken cancellationToken)
-        {
-            _lock.WaitOne();
-            try
-            {
-                await _fileStore.ReplaceAsync(_header.Id, stream, cancellationToken);
-            }
-            finally
-            {
-                _lock.Release();
-            }
-        }
 
         /// <summary>
         /// Reads a 

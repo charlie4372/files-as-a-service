@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
@@ -8,7 +6,7 @@ namespace FilesAsAService.UnitTests
     [TestFixture]
     public class ByteCounterStreamProxyTests
     {
-        private Random _random = new Random();
+        private TestDataGenerator _testDataGenerator = new TestDataGenerator();
 
         [TestCase(0, 100)]
         [TestCase(1, 100)]
@@ -19,7 +17,7 @@ namespace FilesAsAService.UnitTests
         [TestCase(300, 100)]
         public async Task DoesReadAsyncCountNumberOfBytes(int size, int blockSize)
         {
-            using var input = CreateRandomStream(size);
+            using var input = _testDataGenerator.CreateRandomStream(size);
             using var byteCounterStreamProxy = new ByteCounterStreamProxy(input, false);
 
             var buffer = new byte[blockSize];
@@ -44,7 +42,7 @@ namespace FilesAsAService.UnitTests
         [TestCase(300, 100)]
         public void DoesReadCountNumberOfBytes(int size, int blockSize)
         {
-            using var input = CreateRandomStream(size);
+            using var input = _testDataGenerator.CreateRandomStream(size);
             using var byteCounterStreamProxy = new ByteCounterStreamProxy(input, false);
 
             var buffer = new byte[blockSize];
@@ -58,14 +56,6 @@ namespace FilesAsAService.UnitTests
             }
 
             Assert.AreEqual(size, totalBytesRead);
-        }
-    
-        private Stream CreateRandomStream(int size)
-        {
-            var buffer = new byte[size];
-            _random.NextBytes(buffer);
-
-            return new MemoryStream(buffer);
-        }   
+        }  
     }
 }

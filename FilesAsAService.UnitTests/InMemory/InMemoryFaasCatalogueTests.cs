@@ -9,8 +9,8 @@ namespace FilesAsAService.UnitTests.InMemory
     [TestFixture]
     public class InMemoryFaasCatalogueTests
     {
-        private Random _random = new Random();
-        
+        private TestDataGenerator _testDataGenerator = new TestDataGenerator();
+            
         private IFaasCatalogue CreateCatalogue()
         {
             return new InMemoryFaasCatalogue();
@@ -68,7 +68,7 @@ namespace FilesAsAService.UnitTests.InMemory
 
             var creatingHeader = await catalogue.StartCreateAsync("test.txt", CancellationToken.None);
 
-            var hash = CreateRandomByteArray(16);
+            var hash = _testDataGenerator.CreateRandomByteArray(16);
             await catalogue.CompleteCreateAsync(creatingHeader.Id, 100, hash, CancellationToken.None);
             var header = await catalogue.GetAsync(creatingHeader.Id, CancellationToken.None);
             Assert.IsNotNull(header);
@@ -92,14 +92,6 @@ namespace FilesAsAService.UnitTests.InMemory
             await catalogue.CancelCreateAsync(creatingHeader.Id, CancellationToken.None);
             var header = await catalogue.GetAsync(creatingHeader.Id, CancellationToken.None);
             Assert.IsNull(header);
-        }
-
-        private byte[] CreateRandomByteArray(int size)
-        {
-            var buffer = new byte[size];
-            _random.NextBytes(buffer);
-
-            return buffer;
         }
     }
 }

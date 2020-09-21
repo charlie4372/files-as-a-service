@@ -49,8 +49,8 @@ namespace FilesAsAService.InMemory
             _lock.WaitOne();
             try
             {
-                if (_files.ContainsKey(fileId))
-                    throw new FaasFileExistsException();
+                if (!_files.ContainsKey(fileId))
+                    throw new FaasFileNotFoundException();
 
                 fileStream = _files[fileId];
             }
@@ -71,34 +71,6 @@ namespace FilesAsAService.InMemory
             {
                 fileStream.Release();
                 throw;
-            }
-        }
-
-        public async Task ReplaceAsync(Guid fileId, Stream stream, CancellationToken cancellationToken)
-        {
-            LockableMemoryStream fileStream;
-            
-            _lock.WaitOne();
-            try
-            {
-                if (_files.ContainsKey(fileId))
-                    throw new FaasFileExistsException();
-
-                fileStream = _files[fileId];
-            }
-            finally
-            {
-                _lock.Release();
-            }
-            
-            fileStream.WaitOne();
-            try
-            {
-                await stream.CopyToAsync(fileStream, cancellationToken);
-            }
-            finally
-            {
-                fileStream.Release();                
             }
         }
     }
