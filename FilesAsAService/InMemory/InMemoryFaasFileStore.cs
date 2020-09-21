@@ -8,13 +8,13 @@ namespace FilesAsAService.InMemory
 {
     public class InMemoryFaasFileStore : IFaasFileStore
     {
-        private readonly Dictionary<Guid, LockableMemoryStream> _files = new Dictionary<Guid, LockableMemoryStream>();
+        private readonly Dictionary<Guid, LockableByteArray> _files = new Dictionary<Guid, LockableByteArray>();
 
         private readonly Semaphore _lock = new Semaphore(1, 1);
 
         public async Task CreateAsync(Guid fileId, Stream stream, CancellationToken cancellationToken)
         {
-            LockableMemoryStream fileStream;
+            LockableByteArray fileData;
             
             _lock.WaitOne();
             try
@@ -22,29 +22,32 @@ namespace FilesAsAService.InMemory
                 if (_files.ContainsKey(fileId))
                     throw new FaasFileExistsException();
 
-                fileStream = new LockableMemoryStream();
+                fileData = new LockableByteArray();
 
-                _files.Add(fileId, fileStream);
+                _files.Add(fileId, fileData);
             }
             finally
             {
                 _lock.Release();
             }
             
-            fileStream.WaitOne();
+            fileData.WaitOne();
             try
             {
-                await stream.CopyToAsync(fileStream, cancellationToken);
+                await using var buffer = new MemoryStream();
+                await stream.CopyToAsync(buffer, cancellationToken);
+                await buffer.FlushAsync(cancellationToken);
+                fileData.Data = buffer.ToArray();
             }
             finally
             {
-                fileStream.Release();
+                fileData.Release();
             }
         }
 
         public Task<Stream> ReadAsync(Guid fileId, CancellationToken cancellationToken)
         {
-            LockableMemoryStream fileStream;
+            LockableByteArray fileData;
             
             _lock.WaitOne();
             try
@@ -52,24 +55,23 @@ namespace FilesAsAService.InMemory
                 if (!_files.ContainsKey(fileId))
                     throw new FaasFileNotFoundException();
 
-                fileStream = _files[fileId];
+                fileData = _files[fileId];
             }
             finally
             {
                 _lock.Release();
             }
             
-            fileStream.WaitOne();
+            fileData.WaitOne();
             try
             {
-                var data = fileStream.ToArray();
-                var wrappedStream = new FaasWrappedStream(new MemoryStream(data));
-                wrappedStream.Disposing += (sender, args) => fileStream.Release(); 
+                var wrappedStream = new FaasWrappedStream(new MemoryStream(fileData.Data));
+                wrappedStream.Disposing += (sender, args) => fileData.Release(); 
                 return Task.FromResult<Stream>(wrappedStream);
             }
             catch
             {
-                fileStream.Release();
+                fileData.Release();
                 throw;
             }
         }
