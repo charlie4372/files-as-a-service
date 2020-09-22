@@ -19,6 +19,8 @@ namespace FilesAsAService
         public byte[] Hash { get; set; }
         
         public FaasFileHeaderStatus Status { get; set; }
+        
+        public int Version { get; set; }
 
         public FaasFileHeader()
         {
@@ -34,6 +36,7 @@ namespace FilesAsAService
             DateDeletedUtc = copyFrom.DateDeletedUtc;
             Hash = copyFrom.Hash;
             Status = copyFrom.Status;
+            Version = 1;
         }
     }
 }
