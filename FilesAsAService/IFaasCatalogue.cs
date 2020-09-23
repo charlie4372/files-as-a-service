@@ -11,14 +11,14 @@ namespace FilesAsAService
     public interface IFaasCatalogue
     {
         /// <summary>
-        /// Gets a FaasFileHeader from the catalogue.
+        /// Gets a header from the catalogue.
         /// </summary>
-        /// <param name="id">The file id.</param>
+        /// <param name="fileId">The file id.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="FaasFileNotFoundException">If the id is not found.</exception>
         /// <exception cref="ArgumentException">If the id is invalid.</exception>
         /// <returns>The header or null.</returns>
-        public ValueTask<FaasFileHeader?> GetAsync(Guid id, CancellationToken cancellationToken);
+        public ValueTask<FaasFileHeader?> GetAsync(Guid fileId, CancellationToken cancellationToken);
         
         /// <summary>
         /// Lists all of the files in the catalogue.
@@ -32,17 +32,28 @@ namespace FilesAsAService
         /// <summary>
         /// Starts creating a header.
         /// After the file is added to the store, <see cref="CompleteCreateAsync"/> completes the creation and makes the header available.
-        /// Call <see cref="CancelCreateAsync"/> to cancel the creation.
+        /// Call <see cref="CancelWritingAsync"/> to cancel the creation.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The header.</returns>
-        public ValueTask<FaasFileHeader> StartCreateAsync(string name, CancellationToken cancellationToken);
+        /// <returns>The file id.</returns>
+        public ValueTask<FaasFileVersionId> StartCreateAsync(string name, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Starts write a new version.
+        /// After the file is written to the store, <see cref="CompleteCreateAsync"/> completes the writing and makes the header available.
+        /// Call <see cref="CancelWritingAsync"/> to cancel the writing.
+        /// </summary>
+        /// <param name="fileId">The fileId.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The version id..</returns>
+        public ValueTask<FaasFileVersionId> StartWritingAsync(Guid fileId, CancellationToken cancellationToken);
         
         /// <summary>
-        /// Completes the creation process.
+        /// Completes the writing process.
         /// </summary>
-        /// <param name="id">The id.</param>
+        /// <param name="fileId">The file id.</param>
+        /// /// <param name="versionId">The versionId id.</param>
         /// <param name="length">The length of the file.</param>
         /// <param name="hash">The hash of the file.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -50,17 +61,18 @@ namespace FilesAsAService
         /// <exception cref="FaasFileNotFoundException">Invalid id.</exception>
         /// <exception cref="FaasInvalidOperationException">The header can not be completed.</exception>
         /// <returns></returns>
-        public ValueTask CompleteCreateAsync(Guid id, long length, byte[] hash, CancellationToken cancellationToken);
+        public ValueTask CompleteWritingAsync(Guid fileId, Guid versionId, long length, byte[] hash, CancellationToken cancellationToken);
         
         /// <summary>
-        /// Cancels the creation process.
+        /// Cancels the writing process.
         /// </summary>
-        /// <param name="id">The id.</param>
+        /// <param name="fileId">The file id.</param>
+        /// /// <param name="versionId">The versionId id.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ArgumentException">Invalid parameters.</exception>
         /// <exception cref="FaasFileNotFoundException">Invalid id.</exception>
         /// <exception cref="FaasInvalidOperationException">The header can not be completed.</exception>
         /// <returns></returns>
-        public Task CancelCreateAsync(Guid id, CancellationToken cancellationToken);
+        public Task CancelWritingAsync(Guid fileId, Guid versionId, CancellationToken cancellationToken);
     }
 }

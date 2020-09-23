@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FilesAsAService.InMemory;
@@ -21,34 +22,21 @@ namespace FilesAsAService.UnitTests.InMemory
         {
             var catalogue = CreateCatalogue();
 
-            var header = await catalogue.StartCreateAsync("test.txt", CancellationToken.None);
+            var fileVersionId = await catalogue.StartCreateAsync("test.txt", CancellationToken.None);
+            var header = await catalogue.GetAsync(fileVersionId.FileId, CancellationToken.None);
             Assert.IsNotNull(header);
             Assert.AreNotEqual(Guid.Empty, header.Id);
             Assert.AreEqual("test.txt", header.Name);
-            Assert.AreEqual(0, header.Length);
             Assert.IsTrue(header.DateCreatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
-            Assert.IsTrue(header.DateUpdatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
             Assert.IsNull(header.DateDeletedUtc);
-            Assert.AreEqual(FaasFileHeaderStatus.Creating, header.Status);
-        }
-        
-        [Test]
-        public async Task DoesStartGetAsyncRetrieveCreatingHeader()
-        {
-            var catalogue = CreateCatalogue();
+            Assert.AreEqual(1, header.Versions.Length);
 
-            var creatingHeader = await catalogue.StartCreateAsync("test.txt", CancellationToken.None);
-
-            var header = await catalogue.GetAsync(creatingHeader.Id, CancellationToken.None);
-                            
-            Assert.IsNotNull(header);
-            Assert.AreNotEqual(Guid.Empty, header.Id);
-            Assert.AreEqual("test.txt", header.Name);
-            Assert.AreEqual(0, header.Length);
-            Assert.IsTrue(header.DateCreatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
-            Assert.IsTrue(header.DateUpdatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
-            Assert.IsNull(header.DateDeletedUtc);
-            Assert.AreEqual(FaasFileHeaderStatus.Creating, header.Status);
+            var version = header.Versions.FirstOrDefault(v => v.Id == fileVersionId.VersionId);
+            Assert.IsNotNull(version);
+            Assert.AreEqual(0, version.Length);
+            Assert.IsTrue(version.DateCreatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
+            Assert.IsNull(version.DateDeletedUtc);
+            Assert.AreEqual(true, version.Writing);
         }
         
         [Test]
@@ -62,15 +50,15 @@ namespace FilesAsAService.UnitTests.InMemory
         }
         
         [Test]
-        public async Task DoesCompleteCreateAsyncUpdateFields()
+        public async Task DoesCompleteWritingAsyncUpdateFields()
         {
             var catalogue = CreateCatalogue();
 
-            var creatingHeader = await catalogue.StartCreateAsync("test.txt", CancellationToken.None);
+            var fileVersionId = await catalogue.StartCreateAsync("test.txt", CancellationToken.None);
 
             var hash = _testDataGenerator.CreateRandomByteArray(16);
-            await catalogue.CompleteCreateAsync(creatingHeader.Id, 100, hash, CancellationToken.None);
-            var header = await catalogue.GetAsync(creatingHeader.Id, CancellationToken.None);
+            await catalogue.CompleteWritingAsync(fileVersionId.Id, 100, hash, CancellationToken.None);
+            var header = await catalogue.GetAsync(fileVersionId.Id, CancellationToken.None);
             Assert.IsNotNull(header);
             Assert.AreNotEqual(Guid.Empty, header.Id);
             Assert.AreEqual("test.txt", header.Name);
@@ -112,7 +100,7 @@ namespace FilesAsAService.UnitTests.InMemory
 
             var creatingHeader = await catalogue.StartCreateAsync("test.txt", CancellationToken.None);
 
-            await catalogue.CancelCreateAsync(creatingHeader.Id, CancellationToken.None);
+            await catalogue.CancelWritingAsync(creatingHeader.Id, CancellationToken.None);
             var header = await catalogue.GetAsync(creatingHeader.Id, CancellationToken.None);
             Assert.IsNull(header);
         }
@@ -122,7 +110,7 @@ namespace FilesAsAService.UnitTests.InMemory
         {
             var catalogue = CreateCatalogue();
 
-            Assert.ThrowsAsync<FaasFileNotFoundException>(async () => { await catalogue.CancelCreateAsync(Guid.NewGuid(), CancellationToken.None); });
+            Assert.ThrowsAsync<FaasFileNotFoundException>(async () => { await catalogue.CancelWritingAsync(Guid.NewGuid(), CancellationToken.None); });
         }
         
         [Test]
@@ -134,7 +122,7 @@ namespace FilesAsAService.UnitTests.InMemory
 
             var hash = _testDataGenerator.CreateRandomByteArray(16);
             await catalogue.CompleteCreateAsync(creatingHeader.Id, 100, hash, CancellationToken.None);
-            Assert.ThrowsAsync<FaasInvalidOperationException>(async () => { await catalogue.CancelCreateAsync(creatingHeader.Id, CancellationToken.None); });
+            Assert.ThrowsAsync<FaasInvalidOperationException>(async () => { await catalogue.CancelWritingAsync(creatingHeader.Id, CancellationToken.None); });
         }
     }
 }

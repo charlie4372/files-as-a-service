@@ -27,15 +27,15 @@ namespace FilesAsAService.InMemory
         /// TODO think about cleaning this up vs back filling the gaps.
         /// </summary>
         private readonly List<FaasFileHeader?> _data = new List<FaasFileHeader?>();
-        private readonly Dictionary<Guid, int> _idIndex = new Dictionary<Guid, int>();
+        private readonly Dictionary<Guid, int> _fileIdIndex = new Dictionary<Guid, int>();
         
         /// <inheritdoc cref="GetAsync"/>
-        public ValueTask<FaasFileHeader?> GetAsync(Guid id, CancellationToken cancellationToken)
+        public ValueTask<FaasFileHeader?> GetAsync(Guid fileId, CancellationToken cancellationToken)
         {
             _lock.WaitOne();
             try
             {
-                return GetNoLock(id, cancellationToken);
+                return GetNoLock(fileId, cancellationToken);
             }
             finally
             {
@@ -46,20 +46,20 @@ namespace FilesAsAService.InMemory
         /// <summary>
         /// Gets a header without using a lock.
         /// </summary>
-        /// <param name="id">The id.</param>
+        /// <param name="fileId">The file id.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The header, or null.</returns>
-        private ValueTask<FaasFileHeader?> GetNoLock(Guid id, CancellationToken cancellationToken)
+        private ValueTask<FaasFileHeader?> GetNoLock(Guid fileId, CancellationToken cancellationToken)
         {
             // Return null of the id isn't found.
-            if (!_idIndex.ContainsKey(id))
+            if (!_fileIdIndex.ContainsKey(fileId))
                 return new ValueTask<FaasFileHeader?>((FaasFileHeader?) null);
 
             // Return the header.
-            var header = _data[_idIndex[id]];
+            var header = _data[_fileIdIndex[fileId]];
             return new ValueTask<FaasFileHeader?>(new FaasFileHeader(header));
         }
-
+        
         /// <inheritdoc cref="ListAsync"/>
         public ValueTask<IEnumerable<FaasFileHeader>> ListAsync(int pageNumber, CancellationToken cancellationToken)
         {
@@ -75,7 +75,7 @@ namespace FilesAsAService.InMemory
         }
 
         /// <inheritdoc cref="StartCreateAsync"/>
-        public ValueTask<FaasFileHeader> StartCreateAsync(string name, CancellationToken cancellationToken)
+        public ValueTask<FaasFileVersionId> StartCreateAsync(string name, CancellationToken cancellationToken)
         {
             _lock.WaitOne();
             try
@@ -85,19 +85,55 @@ namespace FilesAsAService.InMemory
                 {
                     Id = Guid.NewGuid(),
                     Name = name,
-                    Length = 0,
-                    DateCreatedUtc = DateTime.UtcNow,
-                    DateUpdatedUtc = DateTime.UtcNow,
-                    Status = FaasFileHeaderStatus.Creating,
-                    Version = 1
+                    DateCreatedUtc = DateTime.UtcNow
+                };
+                fileHeader.Versions = new[]
+                {
+                    new FaasFileHeaderVersion
+                    {
+                        Id = Guid.NewGuid(),
+                        DateCreatedUtc = fileHeader.DateCreatedUtc,
+                        Writing = true
+                    }
                 };
 
                 // Add it and index it.
                 _data.Add(fileHeader);
-                _idIndex.Add(fileHeader.Id, _data.Count - 1);
+                _fileIdIndex.Add(fileHeader.Id, _data.Count - 1);
                 
                 // Return it.
-                return new ValueTask<FaasFileHeader>(fileHeader);
+                return new ValueTask<FaasFileVersionId>(new FaasFileVersionId(fileHeader.Id, fileHeader.Versions[0].Id));
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+        
+        /// <inheritdoc cref="StartWritingAsync"/>
+        public async ValueTask<FaasFileVersionId> StartWritingAsync(Guid fileId, CancellationToken cancellationToken)
+        {
+            _lock.WaitOne();
+            try
+            {
+                // Get the header. If its not found, throw.
+                var header = await GetNoLock(fileId, cancellationToken);
+                if (header == null)
+                    throw new FaasFileNotFoundException();
+
+                // Create the new version.
+                var newVersion = new FaasFileHeaderVersion
+                {
+                    Id = Guid.NewGuid(),
+                    DateCreatedUtc = DateTime.UtcNow,
+                    Writing = true
+                };
+
+                // Add it to the header.
+                header.Versions = header.Versions.Concat(new[] {newVersion}).ToArray();
+
+                // Return it.
+                return new FaasFileVersionId(fileId, newVersion.Id);
             }
             finally
             {
@@ -105,27 +141,31 @@ namespace FilesAsAService.InMemory
             }
         }
 
-        /// <inheritdoc cref="CompleteCreateAsync"/>
-        public async ValueTask CompleteCreateAsync(Guid id, long length, byte[] hash, CancellationToken cancellationToken)
+        /// <inheritdoc cref="CompleteWritingAsync"/>
+        public async ValueTask CompleteWritingAsync(Guid fileId, Guid versionId, long length, byte[] hash, CancellationToken cancellationToken)
         {
             _lock.WaitOne();
             try
             {
                 // Get the header. If its not found, throw.
-                var header = await GetNoLock(id, cancellationToken);
+                var header = await GetNoLock(fileId, cancellationToken);
                 if (header == null)
                     throw new FaasFileNotFoundException();
 
                 // Check that the header can be completed.
-                if (header.Status != FaasFileHeaderStatus.Creating)
+                var version = header.Versions.FirstOrDefault(v => v.Id == versionId);
+                if (version == null)
+                    throw new FaasFileVersionNotFoundException();
+                if (!version.Writing)
                     throw new FaasInvalidOperationException();
 
                 // Update the fields.
-                header.Length = length;
-                header.Status = FaasFileHeaderStatus.Active;
-
+                version.Length = length;
+                version.Hash = hash;
+                version.Writing = false;
+                
                 // Update stored copy.
-                _data[_idIndex[id]] = header;
+                _data[_fileIdIndex[fileId]] = header;
             }
             finally
             {
@@ -133,27 +173,38 @@ namespace FilesAsAService.InMemory
             }
         }
 
-        /// <inheritdoc cref="CancelCreateAsync"/>
-        public async Task CancelCreateAsync(Guid id, CancellationToken cancellationToken)
+        /// <inheritdoc cref="CancelWritingAsync"/>
+        public async Task CancelWritingAsync(Guid fileId, Guid versionId, CancellationToken cancellationToken)
         {
             _lock.WaitOne();
             try
             {
                 // Get the header. If its not found, throw.
-                var header = await GetNoLock(id, cancellationToken);
+                var header = await GetNoLock(fileId, cancellationToken);
                 if (header == null)
                     throw new FaasFileNotFoundException();
 
                 // Check that the header can be completed.
-                if (header.Status != FaasFileHeaderStatus.Creating)
+                var version = header.Versions.FirstOrDefault(v => v.Id == versionId);
+                if (version == null)
+                    throw new FaasFileVersionNotFoundException();
+                if (!version.Writing)
                     throw new FaasInvalidOperationException();
-
-                // Clear the header. 
-                // Not deleting it since it will mess with indexes.
-                _data[_idIndex[id]] = null;
                 
-                // Delete the index.
-                _idIndex.Remove(id);
+                // If there is only one version, the whole header can go.
+                if (header.Versions.Length == 1)
+                {
+                    // Clear the header. 
+                    // Not deleting it since it will mess with indexes.
+                    _data[_fileIdIndex[fileId]] = null;
+
+                    // Delete the index.
+                    _fileIdIndex.Remove(fileId);
+                }
+                else
+                {
+                    header.Versions = header.Versions.Where(v => v.Id != version.Id).ToArray();
+                }
             }
             finally
             {
