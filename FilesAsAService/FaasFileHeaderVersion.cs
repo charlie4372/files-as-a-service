@@ -27,7 +27,7 @@ namespace FilesAsAService
             Hash = copyFrom.Hash;
             DateCreatedUtc = copyFrom.DateCreatedUtc;
             DateDeletedUtc = copyFrom.DateDeletedUtc;
-            Writing = Writing;
+            Writing = copyFrom.Writing;
         }
     }
 }
