@@ -28,6 +28,31 @@ namespace FilesAsAService.UnitTests
             Assert.AreEqual(inputStream, readStream);
         }
         
+        [Test]
+        public async Task DoesContainAsyncFindFile()
+        {
+            await using var inputStream = _testDataGenerator.CreateRandomStream(1024);
+
+            using var fileStore = CreateFileStore();
+            var id = Guid.NewGuid();
+
+            await fileStore.CreateAsync(id, inputStream, CancellationToken.None);
+            inputStream.Position = 0;
+            
+            var found = await fileStore.ContainsAsync(id, CancellationToken.None);
+            Assert.IsTrue(found);
+        }
+        
+        [Test]
+        public async Task DoesContainAsyncNotFindFile()
+        {
+            using var fileStore = CreateFileStore();
+            var id = Guid.NewGuid();
+
+            var found = await fileStore.ContainsAsync(id, CancellationToken.None);
+            Assert.IsFalse(found);
+        }
+        
          [Test]
         public async Task DoesCreateThrowWhenIdExists()
         {

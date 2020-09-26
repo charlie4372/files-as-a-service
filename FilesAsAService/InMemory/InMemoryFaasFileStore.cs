@@ -11,20 +11,37 @@ namespace FilesAsAService.InMemory
     /// </summary>
     public class InMemoryFaasFileStore : IFaasFileStore
     {
+        private readonly int _blockSize = 1024;
+        
         /// <summary>
         /// The files.
         /// </summary>
-        private readonly Dictionary<Guid, LockableByteArray> _files = new Dictionary<Guid, LockableByteArray>();
+        private readonly Dictionary<Guid, InMemoryFile> _files = new Dictionary<Guid, InMemoryFile>();
 
         /// <summary>
         /// Lock to protect <see cref="_files"/>.
         /// </summary>
         private readonly Semaphore _lock = new Semaphore(1, 1);
 
+        /// <inheritdoc cref="ContainsAsync"/>
+        public Task<bool> ContainsAsync(Guid id, CancellationToken cancellationToken)
+        {
+            // Lock the db.
+            _lock.WaitOne();
+            try
+            {
+                return Task.FromResult(_files.ContainsKey(id));
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+
         /// <inheritdoc cref="CreateAsync"/>
         public async Task CreateAsync(Guid id, Stream stream, CancellationToken cancellationToken)
         {
-            LockableByteArray fileData;
+            InMemoryFile fileData;
             
             // Lock the db.
             _lock.WaitOne();
@@ -35,7 +52,7 @@ namespace FilesAsAService.InMemory
                     throw new FaasFileExistsException();
 
                 // Add the LockableByteArray that will hold the data.
-                fileData = new LockableByteArray();
+                fileData = new InMemoryFile();
                 
                 _files.Add(id, fileData);
             }
@@ -48,10 +65,10 @@ namespace FilesAsAService.InMemory
             fileData.WaitOne();
             try
             {
-                await using var buffer = new MemoryStream();
+                await using var buffer = new InMemoryFileWriterStream(_blockSize);
                 await stream.CopyToAsync(buffer, cancellationToken);
                 await buffer.FlushAsync(cancellationToken);
-                fileData.Data = buffer.ToArray();
+                fileData.SetData(buffer.GetBlocks(), buffer.Length);
             }
             finally
             {
@@ -62,7 +79,7 @@ namespace FilesAsAService.InMemory
         /// <inheritdoc cref="ReadAsync"/>
         public Task<Stream> ReadAsync(Guid id, CancellationToken cancellationToken)
         {
-            LockableByteArray fileData;
+            InMemoryFile fileData;
             
             _lock.WaitOne();
             try
@@ -82,7 +99,7 @@ namespace FilesAsAService.InMemory
             fileData.WaitOne();
             try
             {
-                return Task.FromResult<Stream>(new MemoryStream(fileData.Data));
+                return Task.FromResult<Stream>(new InMemoryFileReadStream(fileData));
             }
             finally
             {

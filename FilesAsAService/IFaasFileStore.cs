@@ -11,6 +11,15 @@ namespace FilesAsAService
     public interface IFaasFileStore : IDisposable
     {
         /// <summary>
+        /// Determines if a file exists in the store.
+        /// </summary>
+        /// <param name="id">The id.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <exception cref="ArgumentException">Invalid arguments.</exception>
+        /// <returns>True if it exists.</returns>
+        Task<bool> ContainsAsync(Guid id, CancellationToken cancellationToken);
+    
+        /// <summary>
         /// Creates a file in the store.
         /// </summary>
         /// <param name="id">The id.</param>

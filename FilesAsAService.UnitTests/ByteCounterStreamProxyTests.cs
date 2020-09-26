@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace FilesAsAService.UnitTests
 {
-    [TestFixture]
+    [TestFixture(Category = "Unit")]
     public class ByteCounterStreamProxyTests
     {
         private TestDataGenerator _testDataGenerator = new TestDataGenerator();

@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace FilesAsAService.UnitTests.InMemory
 {
-    [TestFixture]
+    [TestFixture(Category = "Unit")]
     public class InMemoryFileStoreTests : StandardFileStoreTests
     {
         protected override IFaasFileStore CreateFileStore()

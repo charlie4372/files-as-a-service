@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace FilesAsAService.Disk.IntegrationTests
 {
-    [TestFixture]
+    [TestFixture(Category = "Integration")]
     public class FaasDiskFileStoreTests : StandardFileStoreTests
     {
         private string _testFolder;

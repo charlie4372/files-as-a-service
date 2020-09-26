@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace FilesAsAService.UnitTests
 {
-    [TestFixture]
+    [TestFixture(Category = "Unit")]
     public class HashGeneratorStreamProxyTests
     {
         private TestDataGenerator _testDataGenerator = new TestDataGenerator();

@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace FilesAsAService.UnitTests.InMemory
 {
-    [TestFixture]
+    [TestFixture(Category = "Unit")]
     public class InMemoryFaasCatalogueTests
     {
         private readonly TestDataGenerator _testDataGenerator = new TestDataGenerator();
