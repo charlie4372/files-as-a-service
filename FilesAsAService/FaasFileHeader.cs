@@ -13,6 +13,8 @@ namespace FilesAsAService
         
         public DateTime? DateDeletedUtc { get; set; }
         
+        public Guid? VersionId { get; set; }
+        
         public FaasFileHeaderVersion[] Versions { get; set; }
 
         public FaasFileHeader()
@@ -26,6 +28,7 @@ namespace FilesAsAService
             Name = copyFrom.Name;
             DateCreatedUtc = copyFrom.DateCreatedUtc;
             DateDeletedUtc = copyFrom.DateDeletedUtc;
+            VersionId = copyFrom.VersionId;
             Versions = copyFrom.Versions.Select(v => new FaasFileHeaderVersion(v)).ToArray();
         }
     }

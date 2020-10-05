@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -67,6 +68,36 @@ namespace FilesAsAService
                 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Reads a file.
+        /// </summary>
+        /// <param name="versionId">The version id.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="id">The id.</param>
+        /// <exception cref="FaasFileNotFoundException">The file was not found.</exception>
+        /// /// <exception cref="FaasFileVersionNotFoundException">The file version was not found.</exception>
+        /// <returns>The contents.</returns>
+        public async Task<Stream> ReadAsync(Guid id, Guid? versionId, CancellationToken cancellationToken)
+        {
+                var header = await _catalogue.GetAsync(id, cancellationToken);
+                if (header == null)
+                    throw new FaasFileNotFoundException();
+                
+                if (cancellationToken.IsCancellationRequested)
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                FaasFileHeaderVersion? version;
+                if (versionId != null)
+                    version = header.Versions.FirstOrDefault(v => v.Id == versionId);
+                else
+                    version = header.Versions.First(v => v.Id == header.VersionId);
+                
+                if (version == null)
+                    throw new FaasFileVersionNotFoundException();
+
+                return await _fileStore.ReadAsync(version.Id, cancellationToken);
         }
     }
 }

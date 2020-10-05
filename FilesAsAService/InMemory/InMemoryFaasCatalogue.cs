@@ -163,6 +163,7 @@ namespace FilesAsAService.InMemory
                 version.Length = length;
                 version.Hash = hash;
                 version.Writing = false;
+                header.VersionId = versionId;
                 
                 // Update stored copy.
                 _data[_fileIdIndex[fileId]] = header;
