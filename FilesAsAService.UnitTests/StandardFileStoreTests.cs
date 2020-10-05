@@ -71,7 +71,7 @@ namespace FilesAsAService.UnitTests
         }
         
         [Test]
-        public void DoesDoesReadAsyncThrowForInvalidIdGetFile()
+        public void DoesReadAsyncThrowForInvalidIdGetFile()
         {
             var fileStore = CreateFileStore();
             var id = Guid.NewGuid();
@@ -81,5 +81,35 @@ namespace FilesAsAService.UnitTests
                 await using var readStream = await fileStore.ReadAsync(id, CancellationToken.None);
             });
         }
+        
+        [Test]
+        public async Task DoesDeleteAsyncRemoveFile()
+        {
+            await using var inputStream = _testDataGenerator.CreateRandomStream(1024);
+
+            using var fileStore = CreateFileStore();
+            var id = Guid.NewGuid();
+
+            await fileStore.CreateAsync(id, inputStream, CancellationToken.None);
+            inputStream.Position = 0;
+            
+            await fileStore.DeleteAsync(id, CancellationToken.None);
+
+            var exists = await fileStore.ContainsAsync(id, CancellationToken.None);
+            Assert.IsFalse(exists);
+        }
+        
+        [Test]
+        public void DoesDeleteAsyncThrowForInvalidId()
+        {
+            var fileStore = CreateFileStore();
+            var id = Guid.NewGuid();
+
+            Assert.ThrowsAsync<FaasFileNotFoundException>(async () =>
+            {
+                await fileStore.DeleteAsync(id, CancellationToken.None);
+            });
+        }
+
     }
 }

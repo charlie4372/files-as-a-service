@@ -39,5 +39,14 @@ namespace FilesAsAService
         /// <exception cref="FaasFileNotFoundException">The file doesn't exist.</exception>
         /// <returns>The file contents.</returns>
         Task<Stream> ReadAsync(Guid id, CancellationToken cancellationToken);
+        
+        /// <summary>
+        /// Deletes a file from the store.
+        /// </summary>
+        /// <param name="id">The id.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <exception cref="ArgumentException">Invalid arguments.</exception>
+        /// <exception cref="FaasFileNotFoundException">The file doesn't exist.</exception>
+        Task DeleteAsync(Guid id, CancellationToken cancellationToken);
     }
 }

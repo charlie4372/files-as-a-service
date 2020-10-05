@@ -65,7 +65,7 @@ namespace FilesAsAService.UnitTests.InMemory
             Assert.AreEqual("test.txt", header.Name);
             Assert.IsTrue(header.DateCreatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
             Assert.IsNull(header.DateDeletedUtc);
-            Assert.AreEqual(fileVersionId, header.VersionId);
+            Assert.AreEqual(fileVersionId.VersionId, header.VersionId);
 
             var version = header.Versions.FirstOrDefault(v => v.Id == fileVersionId.VersionId);
             Assert.IsNotNull(version);

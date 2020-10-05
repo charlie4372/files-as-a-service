@@ -65,6 +65,18 @@ namespace FilesAsAService.Disk
             return Task.FromResult<Stream>(File.OpenRead(Path.Combine(_baseFolder, id.ToString())));
         }
         
+        /// <inheritdoc cref="DeleteAsync"/>
+        public Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+        {
+            var fullPath = GetPathToId(id);
+            if (!File.Exists(fullPath))
+                throw new FaasFileNotFoundException();
+            
+            File.Delete(fullPath);
+            
+            return Task.CompletedTask;
+        }
+        
         /// <inheritdoc cref="Dispose"/>
         public void Dispose()
         {

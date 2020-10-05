@@ -106,6 +106,26 @@ namespace FilesAsAService.InMemory
                 fileData.Release();
             }
         }
+        
+        /// <inheritdoc cref="DeleteAsync"/>
+        public Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+        {
+            _lock.WaitOne();
+            try
+            {
+                // Throw is the file doesn't exist.
+                if (!_files.ContainsKey(id))
+                    throw new FaasFileNotFoundException();
+
+                _files.Remove(id);
+            }
+            finally
+            {
+                _lock.Release();
+            }
+            
+            return Task.CompletedTask;
+        }
 
         /// <inheritdoc cref="Dispose"/>
         public void Dispose()
