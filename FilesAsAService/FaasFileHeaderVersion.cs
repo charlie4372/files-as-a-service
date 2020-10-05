@@ -14,7 +14,7 @@ namespace FilesAsAService
         
         public DateTime? DateDeletedUtc { get; set; }
         
-        public bool Writing { get; set; }
+        public FileHeaderVersionStatus Status { get; set; }
 
         public FaasFileHeaderVersion()
         {
@@ -27,7 +27,7 @@ namespace FilesAsAService
             Hash = copyFrom.Hash;
             DateCreatedUtc = copyFrom.DateCreatedUtc;
             DateDeletedUtc = copyFrom.DateDeletedUtc;
-            Writing = copyFrom.Writing;
+            Status = copyFrom.Status;
         }
     }
 }

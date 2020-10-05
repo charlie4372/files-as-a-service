@@ -93,7 +93,7 @@ namespace FilesAsAService.InMemory
                     {
                         Id = Guid.NewGuid(),
                         DateCreatedUtc = fileHeader.DateCreatedUtc,
-                        Writing = true
+                        Status = FileHeaderVersionStatus.Writing
                     }
                 };
 
@@ -126,7 +126,7 @@ namespace FilesAsAService.InMemory
                 {
                     Id = Guid.NewGuid(),
                     DateCreatedUtc = DateTime.UtcNow,
-                    Writing = true
+                    Status = FileHeaderVersionStatus.Writing
                 };
 
                 // Add it to the header.
@@ -156,13 +156,13 @@ namespace FilesAsAService.InMemory
                 var version = header.Versions.FirstOrDefault(v => v.Id == versionId);
                 if (version == null)
                     throw new FaasFileVersionNotFoundException();
-                if (!version.Writing)
+                if (version.Status != FileHeaderVersionStatus.Writing)
                     throw new FaasInvalidOperationException();
 
                 // Update the fields.
                 version.Length = length;
                 version.Hash = hash;
-                version.Writing = false;
+                version.Status = FileHeaderVersionStatus.Ok;
                 header.VersionId = versionId;
                 
                 // Update stored copy.
@@ -189,7 +189,7 @@ namespace FilesAsAService.InMemory
                 var version = header.Versions.FirstOrDefault(v => v.Id == versionId);
                 if (version == null)
                     throw new FaasFileVersionNotFoundException();
-                if (!version.Writing)
+                if (version.Status != FileHeaderVersionStatus.Writing)
                     throw new FaasInvalidOperationException();
                 
                 // If there is only one version, the whole header can go.

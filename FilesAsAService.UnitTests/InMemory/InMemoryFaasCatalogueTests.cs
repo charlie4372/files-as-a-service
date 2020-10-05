@@ -37,7 +37,7 @@ namespace FilesAsAService.UnitTests.InMemory
             Assert.AreEqual(0, version.Length);
             Assert.IsTrue(version.DateCreatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
             Assert.IsNull(version.DateDeletedUtc);
-            Assert.AreEqual(true, version.Writing);
+            Assert.AreEqual(FileHeaderVersionStatus.Writing, version.Status);
         }
         
         [Test]
@@ -72,7 +72,7 @@ namespace FilesAsAService.UnitTests.InMemory
             Assert.AreEqual(100, version.Length);
             Assert.IsTrue(version.DateCreatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
             Assert.IsNull(version.DateDeletedUtc);
-            Assert.AreEqual(false, version.Writing);
+            Assert.AreEqual(FileHeaderVersionStatus.Ok, version.Status);
         }
         
         [Test]
