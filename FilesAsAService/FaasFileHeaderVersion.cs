@@ -4,7 +4,7 @@ namespace FilesAsAService
 {
     public class FaasFileHeaderVersion
     {
-        public Guid Id { get; set; }
+        public Guid VersionId { get; set; }
         
         public long Length { get; set; }
         
@@ -14,7 +14,7 @@ namespace FilesAsAService
         
         public DateTime? DateDeletedUtc { get; set; }
         
-        public FileHeaderVersionStatus Status { get; set; }
+        public FaasFileHeaderVersionStatus Status { get; set; }
 
         public FaasFileHeaderVersion()
         {
@@ -22,7 +22,7 @@ namespace FilesAsAService
 
         public FaasFileHeaderVersion(FaasFileHeaderVersion copyFrom)
         {
-            Id = copyFrom.Id;
+            VersionId = copyFrom.VersionId;
             Length = copyFrom.Length;
             Hash = copyFrom.Hash;
             DateCreatedUtc = copyFrom.DateCreatedUtc;

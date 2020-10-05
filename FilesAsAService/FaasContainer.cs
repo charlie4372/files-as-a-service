@@ -90,14 +90,14 @@ namespace FilesAsAService
 
                 FaasFileHeaderVersion? version;
                 if (versionId != null)
-                    version = header.Versions.FirstOrDefault(v => v.Id == versionId);
+                    version = header.Versions.FirstOrDefault(v => v.VersionId == versionId);
                 else
-                    version = header.Versions.First(v => v.Id == header.VersionId);
+                    version = header.Versions.First(v => v.VersionId == header.VersionId);
                 
                 if (version == null)
                     throw new FaasFileVersionNotFoundException();
 
-                return await _fileStore.ReadAsync(version.Id, cancellationToken);
+                return await _fileStore.ReadAsync(version.VersionId, cancellationToken);
         }
     }
 }

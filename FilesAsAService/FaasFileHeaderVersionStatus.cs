@@ -2,7 +2,7 @@ using System.Runtime.Serialization;
 
 namespace FilesAsAService
 {
-    public enum FileHeaderVersionStatus
+    public enum FaasFileHeaderVersionStatus
     {
         [EnumMember(Value = "ok")]
         Ok,

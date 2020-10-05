@@ -83,7 +83,7 @@ namespace FilesAsAService.InMemory
                 // Create the header.
                 var fileHeader = new FaasFileHeader
                 {
-                    Id = Guid.NewGuid(),
+                    FileId = Guid.NewGuid(),
                     Name = name,
                     DateCreatedUtc = DateTime.UtcNow
                 };
@@ -91,18 +91,18 @@ namespace FilesAsAService.InMemory
                 {
                     new FaasFileHeaderVersion
                     {
-                        Id = Guid.NewGuid(),
+                        VersionId = Guid.NewGuid(),
                         DateCreatedUtc = fileHeader.DateCreatedUtc,
-                        Status = FileHeaderVersionStatus.Writing
+                        Status = FaasFileHeaderVersionStatus.Writing
                     }
                 };
 
                 // Add it and index it.
                 _data.Add(fileHeader);
-                _fileIdIndex.Add(fileHeader.Id, _data.Count - 1);
+                _fileIdIndex.Add(fileHeader.FileId, _data.Count - 1);
                 
                 // Return it.
-                return new ValueTask<FaasFileVersionId>(new FaasFileVersionId(fileHeader.Id, fileHeader.Versions[0].Id));
+                return new ValueTask<FaasFileVersionId>(new FaasFileVersionId(fileHeader.FileId, fileHeader.Versions[0].VersionId));
             }
             finally
             {
@@ -124,16 +124,16 @@ namespace FilesAsAService.InMemory
                 // Create the new version.
                 var newVersion = new FaasFileHeaderVersion
                 {
-                    Id = Guid.NewGuid(),
+                    VersionId = Guid.NewGuid(),
                     DateCreatedUtc = DateTime.UtcNow,
-                    Status = FileHeaderVersionStatus.Writing
+                    Status = FaasFileHeaderVersionStatus.Writing
                 };
 
                 // Add it to the header.
                 header.Versions = header.Versions.Concat(new[] {newVersion}).ToArray();
 
                 // Return it.
-                return new FaasFileVersionId(fileId, newVersion.Id);
+                return new FaasFileVersionId(fileId, newVersion.VersionId);
             }
             finally
             {
@@ -153,16 +153,16 @@ namespace FilesAsAService.InMemory
                     throw new FaasFileNotFoundException();
 
                 // Check that the header can be completed.
-                var version = header.Versions.FirstOrDefault(v => v.Id == versionId);
+                var version = header.Versions.FirstOrDefault(v => v.VersionId == versionId);
                 if (version == null)
                     throw new FaasFileVersionNotFoundException();
-                if (version.Status != FileHeaderVersionStatus.Writing)
+                if (version.Status != FaasFileHeaderVersionStatus.Writing)
                     throw new FaasInvalidOperationException();
 
                 // Update the fields.
                 version.Length = length;
                 version.Hash = hash;
-                version.Status = FileHeaderVersionStatus.Ok;
+                version.Status = FaasFileHeaderVersionStatus.Ok;
                 header.VersionId = versionId;
                 
                 // Update stored copy.
@@ -186,10 +186,10 @@ namespace FilesAsAService.InMemory
                     throw new FaasFileNotFoundException();
 
                 // Check that the header can be completed.
-                var version = header.Versions.FirstOrDefault(v => v.Id == versionId);
+                var version = header.Versions.FirstOrDefault(v => v.VersionId == versionId);
                 if (version == null)
                     throw new FaasFileVersionNotFoundException();
-                if (version.Status != FileHeaderVersionStatus.Writing)
+                if (version.Status != FaasFileHeaderVersionStatus.Writing)
                     throw new FaasInvalidOperationException();
                 
                 // If there is only one version, the whole header can go.
@@ -204,7 +204,7 @@ namespace FilesAsAService.InMemory
                 }
                 else
                 {
-                    header.Versions = header.Versions.Where(v => v.Id != version.Id).ToArray();
+                    header.Versions = header.Versions.Where(v => v.VersionId != version.VersionId).ToArray();
                 }
             }
             finally

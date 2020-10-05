@@ -121,11 +121,11 @@ namespace FilesAsAService.UnitTests
             var fileVersionId = new FaasFileVersionId(Guid.NewGuid(), Guid.NewGuid());
             var header = new FaasFileHeader
             {
-                Id = fileVersionId.FileId,
+                FileId = fileVersionId.FileId,
                 VersionId = fileVersionId.VersionId,
                 Versions = new[]
                 {
-                    new FaasFileHeaderVersion {Id = fileVersionId.VersionId},
+                    new FaasFileHeaderVersion {VersionId = fileVersionId.VersionId},
                 }
             };
             var data = _testDataGenerator.CreateRandomByteArray(100);
@@ -139,7 +139,7 @@ namespace FilesAsAService.UnitTests
                 .ReturnsAsync(() => dataStream);
 
             var container = CreateContainer();
-            var stream = await container.ReadAsync(header.Id, null, CancellationToken.None);
+            var stream = await container.ReadAsync(header.FileId, null, CancellationToken.None);
 
             Assert.AreEqual(dataStream, stream);
 
@@ -155,11 +155,11 @@ namespace FilesAsAService.UnitTests
             var fileVersionId = new FaasFileVersionId(Guid.NewGuid(), Guid.NewGuid());
             var header = new FaasFileHeader
             {
-                Id = fileVersionId.FileId,
+                FileId = fileVersionId.FileId,
                 VersionId = fileVersionId.VersionId,
                 Versions = new[]
                 {
-                    new FaasFileHeaderVersion {Id = fileVersionId.VersionId},
+                    new FaasFileHeaderVersion {VersionId = fileVersionId.VersionId},
                 }
             };
             var data = _testDataGenerator.CreateRandomByteArray(100);
@@ -173,7 +173,7 @@ namespace FilesAsAService.UnitTests
                 .ReturnsAsync(() => dataStream);
 
             var container = CreateContainer();
-            var stream = await container.ReadAsync(header.Id, header.VersionId, CancellationToken.None);
+            var stream = await container.ReadAsync(header.FileId, header.VersionId, CancellationToken.None);
 
             Assert.AreEqual(dataStream, stream);
 
@@ -189,11 +189,11 @@ namespace FilesAsAService.UnitTests
             var fileVersionId = new FaasFileVersionId(Guid.NewGuid(), Guid.NewGuid());
             var header = new FaasFileHeader
             {
-                Id = fileVersionId.FileId,
+                FileId = fileVersionId.FileId,
                 VersionId = fileVersionId.VersionId,
                 Versions = new[]
                 {
-                    new FaasFileHeaderVersion {Id = fileVersionId.VersionId},
+                    new FaasFileHeaderVersion {VersionId = fileVersionId.VersionId},
                 }
             };
             var data = _testDataGenerator.CreateRandomByteArray(100);
@@ -207,7 +207,7 @@ namespace FilesAsAService.UnitTests
                 .ReturnsAsync(() => dataStream);
 
             var container = CreateContainer();
-            Assert.ThrowsAsync<FaasFileVersionNotFoundException>(async () => await container.ReadAsync(header.Id, Guid.NewGuid(), CancellationToken.None));
+            Assert.ThrowsAsync<FaasFileVersionNotFoundException>(async () => await container.ReadAsync(header.FileId, Guid.NewGuid(), CancellationToken.None));
 
             _catalogueMock.Verify(m => m.GetAsync(It.IsAny<Guid>(),
                     It.IsAny<CancellationToken>())
@@ -221,17 +221,17 @@ namespace FilesAsAService.UnitTests
             var fileVersionId = new FaasFileVersionId(Guid.NewGuid(), Guid.NewGuid());
             var header = new FaasFileHeader
             {
-                Id = fileVersionId.FileId,
+                FileId = fileVersionId.FileId,
                 VersionId = fileVersionId.VersionId,
                 Versions = new[]
                 {
-                    new FaasFileHeaderVersion {Id = fileVersionId.VersionId},
+                    new FaasFileHeaderVersion {VersionId = fileVersionId.VersionId},
                 }
             };
             var data = _testDataGenerator.CreateRandomByteArray(100);
             await using var dataStream = new MemoryStream(data);
 
-            _catalogueMock.Setup(m => m.GetAsync(It.Is<Guid>(v => v == header.Id),
+            _catalogueMock.Setup(m => m.GetAsync(It.Is<Guid>(v => v == header.FileId),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => header);
 

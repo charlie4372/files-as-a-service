@@ -25,19 +25,19 @@ namespace FilesAsAService.UnitTests.InMemory
             var fileVersionId = await catalogue.StartCreateAsync("test.txt", CancellationToken.None);
             var header = await catalogue.GetAsync(fileVersionId.FileId, CancellationToken.None);
             Assert.IsNotNull(header);
-            Assert.AreNotEqual(Guid.Empty, header.Id);
+            Assert.AreNotEqual(Guid.Empty, header.FileId);
             Assert.AreEqual("test.txt", header.Name);
             Assert.IsTrue(header.DateCreatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
             Assert.IsNull(header.DateDeletedUtc);
             Assert.AreEqual(1, header.Versions.Length);
             Assert.IsNull(header.VersionId);
 
-            var version = header.Versions.FirstOrDefault(v => v.Id == fileVersionId.VersionId);
+            var version = header.Versions.FirstOrDefault(v => v.VersionId == fileVersionId.VersionId);
             Assert.IsNotNull(version);
             Assert.AreEqual(0, version.Length);
             Assert.IsTrue(version.DateCreatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
             Assert.IsNull(version.DateDeletedUtc);
-            Assert.AreEqual(FileHeaderVersionStatus.Writing, version.Status);
+            Assert.AreEqual(FaasFileHeaderVersionStatus.Writing, version.Status);
         }
         
         [Test]
@@ -61,18 +61,18 @@ namespace FilesAsAService.UnitTests.InMemory
             await catalogue.CompleteWritingAsync(fileVersionId.FileId, fileVersionId.VersionId, 100, hash, CancellationToken.None);
             var header = await catalogue.GetAsync(fileVersionId.FileId, CancellationToken.None);
             Assert.IsNotNull(header);
-            Assert.AreNotEqual(Guid.Empty, header.Id);
+            Assert.AreNotEqual(Guid.Empty, header.FileId);
             Assert.AreEqual("test.txt", header.Name);
             Assert.IsTrue(header.DateCreatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
             Assert.IsNull(header.DateDeletedUtc);
             Assert.AreEqual(fileVersionId.VersionId, header.VersionId);
 
-            var version = header.Versions.FirstOrDefault(v => v.Id == fileVersionId.VersionId);
+            var version = header.Versions.FirstOrDefault(v => v.VersionId == fileVersionId.VersionId);
             Assert.IsNotNull(version);
             Assert.AreEqual(100, version.Length);
             Assert.IsTrue(version.DateCreatedUtc.Subtract(DateTime.UtcNow).TotalSeconds < 1);
             Assert.IsNull(version.DateDeletedUtc);
-            Assert.AreEqual(FileHeaderVersionStatus.Ok, version.Status);
+            Assert.AreEqual(FaasFileHeaderVersionStatus.Ok, version.Status);
         }
         
         [Test]

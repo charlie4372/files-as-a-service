@@ -5,7 +5,7 @@ namespace FilesAsAService
 {
     public class FaasFileHeader
     {
-        public Guid Id { get; set; }
+        public Guid FileId { get; set; }
         
         public string Name { get; set; }
         
@@ -24,7 +24,7 @@ namespace FilesAsAService
         
         public FaasFileHeader(FaasFileHeader copyFrom)
         {
-            Id = copyFrom.Id;
+            FileId = copyFrom.FileId;
             Name = copyFrom.Name;
             DateCreatedUtc = copyFrom.DateCreatedUtc;
             DateDeletedUtc = copyFrom.DateDeletedUtc;
