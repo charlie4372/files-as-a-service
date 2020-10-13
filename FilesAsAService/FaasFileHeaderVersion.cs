@@ -18,6 +18,7 @@ namespace FilesAsAService
 
         public FaasFileHeaderVersion()
         {
+            Hash = new byte[0];
         }
 
         public FaasFileHeaderVersion(FaasFileHeaderVersion copyFrom)

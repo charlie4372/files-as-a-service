@@ -53,7 +53,7 @@ namespace FilesAsAService.InMemory
             while (copiedThisIteration != 0)
             {
                 // Read was can be read from the current block.
-                // Keep reparting until the the stream is exhausted, or the request has been satisfied.
+                // Keep repeating until the the stream is exhausted, or the request has been satisfied.
                 copiedThisIteration = ReadFromBlock(buffer, offset + totalCopied, count - totalCopied);
                 totalCopied += copiedThisIteration;
             }
@@ -74,8 +74,12 @@ namespace FilesAsAService.InMemory
                 return 0;
             
             var block = _file.Blocks[_blockIndex];
+
+            var blockSize = _file.Blocks.Count == 1 ? (int)_file.Length
+                : _blockIndex < _file.Blocks.Count - 1 ? _file.BlockSize
+                : (int)(_file.Length - (_file.BlockSize * _blockIndex - 1));
             
-            var bytesToCopy = Math.Min(block.Length - _blockOffset, count);
+            var bytesToCopy = Math.Min(blockSize - _blockOffset, count);
             Array.Copy(block, _blockOffset, buffer, offset, bytesToCopy);
 
             Seek(bytesToCopy, SeekOrigin.Current);
@@ -173,13 +177,13 @@ namespace FilesAsAService.InMemory
         /// <inheritdoc cref="SetLength"/>
         public override void SetLength(long value)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         /// <inheritdoc cref="Write"/>
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         /// <inheritdoc cref="Read"/>

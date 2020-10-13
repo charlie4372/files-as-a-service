@@ -6,7 +6,7 @@ namespace FilesAsAService
     public class FaasFileHeader
     {
         public Guid FileId { get; set; }
-        
+
         public string Name { get; set; }
         
         public DateTime DateCreatedUtc { get; set; }
@@ -19,6 +19,7 @@ namespace FilesAsAService
 
         public FaasFileHeader()
         {
+            Name = string.Empty;
             Versions = new FaasFileHeaderVersion[0];
         }
         

@@ -68,7 +68,7 @@ namespace FilesAsAService.InMemory
                 await using var buffer = new InMemoryFileWriterStream(_blockSize);
                 await stream.CopyToAsync(buffer, cancellationToken);
                 await buffer.FlushAsync(cancellationToken);
-                fileData.SetData(buffer.GetBlocks(), buffer.Length);
+                fileData.SetData(buffer.GetBlocks(), buffer.Length, _blockSize);
             }
             finally
             {
@@ -145,6 +145,11 @@ namespace FilesAsAService.InMemory
             if (disposing)
             {
                 _lock.Dispose();
+
+                foreach (var kvp in _files)
+                {
+                    kvp.Value.Dispose();
+                }
                 
                 _files.Clear();
             }

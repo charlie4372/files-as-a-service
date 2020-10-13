@@ -21,8 +21,8 @@ namespace FilesAsAService.UnitTests
 
             await fileStore.CreateAsync(id, inputStream, CancellationToken.None);
             inputStream.Position = 0;
-            
-            using var readStream = await fileStore.ReadAsync(id, CancellationToken.None);
+
+            await using var readStream = await fileStore.ReadAsync(id, CancellationToken.None);
             Assert.IsNotNull(readStream);
             
             Assert.AreEqual(inputStream, readStream);

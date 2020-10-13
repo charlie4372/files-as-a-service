@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 
@@ -48,19 +49,19 @@ namespace FilesAsAService.InMemory
         /// <inheritdoc cref="Read"/>
         public override int Read(byte[] buffer, int offset, int count)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         /// <inheritdoc cref="Seek"/>
         public override long Seek(long offset, SeekOrigin origin)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         /// <inheritdoc cref="SetLength"/>
         public override void SetLength(long value)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         /// <inheritdoc cref="Write"/>
@@ -85,7 +86,7 @@ namespace FilesAsAService.InMemory
         {
             if (_currentBlock == null || _blockOffset == _blockSize)
             {
-                _currentBlock = new byte[_blockSize];
+                _currentBlock = ArrayPool<byte>.Shared.Rent(_blockSize);
                 _blocks.Add(_currentBlock);
                 _blockOffset = 0;
             }
@@ -122,25 +123,6 @@ namespace FilesAsAService.InMemory
         /// </summary>
         public IReadOnlyList<byte[]> GetBlocks()
         {
-            if (_blocks.Count == 0)
-                return _blocks;
-
-            // If the last block was never written to, remove it from the list.
-            if (_blockOffset == 0)
-            {
-                _blocks.RemoveAt(_blocks.Count - 1);
-                _blockOffset = _blockSize;
-            }
-
-            // If the last block is full, return.
-            if (_blockOffset == _blockSize)
-                return _blocks;
-            
-            // Otherwise the last block is partial. Allocate a new buffer of the correct size and swap it out with the partial block.
-            var lastBlockIndex = _blocks.Count - 1;
-            var newLastBlock = new byte[_blockOffset];
-            Array.Copy(_blocks[lastBlockIndex], 0, newLastBlock, 0, _blockOffset);
-            _blocks[lastBlockIndex] = newLastBlock;
             return _blocks;
         }
     }
