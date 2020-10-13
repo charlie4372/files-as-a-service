@@ -11,6 +11,16 @@ namespace FilesAsAService
     public interface IFaasFileStore : IDisposable
     {
         /// <summary>
+        /// Can this store be read from.
+        /// </summary>
+        bool CanRead { get; }
+        
+        /// <summary>
+        /// Can this store be written to.
+        /// </summary>
+        bool CanWrite { get; }
+        
+        /// <summary>
         /// Determines if a file exists in the store.
         /// </summary>
         /// <param name="id">The id.</param>

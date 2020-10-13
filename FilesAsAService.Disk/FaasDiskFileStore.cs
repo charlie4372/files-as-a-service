@@ -16,12 +16,35 @@ namespace FilesAsAService.Disk
         private readonly string _baseFolder;
 
         /// <summary>
+        /// The number of buckets to use.
+        /// </summary>
+        private readonly int _numberOfBuckets;
+
+        /// <inheritdoc cref="CanRead"/>
+        public bool CanRead => true;
+
+        /// <inheritdoc cref="CanWrite"/>
+        public bool CanWrite => true;
+
+        /// <summary>
         /// Creates a new instance.
         /// </summary>
         /// <param name="baseFolder">The base folder of the files.</param>
-        public FaasDiskFileStore(string baseFolder)
+        public FaasDiskFileStore(string baseFolder) : this(baseFolder, 0)
         {
+        }
+
+        /// <summary>
+        /// Creates a new instance.
+        /// </summary>
+        /// <param name="baseFolder">The base folder of the files.</param>
+        /// <param name="numberOfBuckets">The number of buckets to use. Use 0 to disable buckets.</param>
+        public FaasDiskFileStore(string baseFolder, int numberOfBuckets)
+        {
+            if (numberOfBuckets < 0) throw new ArgumentOutOfRangeException(nameof(numberOfBuckets));
+            
             _baseFolder = baseFolder;
+            _numberOfBuckets = numberOfBuckets;
         }
 
         /// <summary>
@@ -31,7 +54,11 @@ namespace FilesAsAService.Disk
         /// <returns>The absolute path to the file.</returns>
         private string GetPathToId(Guid id)
         {
-            return Path.Combine(_baseFolder, id.ToString());
+            if (_numberOfBuckets == 0)
+                return Path.Combine(_baseFolder, id.ToString());
+
+            var bucket = id.GetHashCode() % _numberOfBuckets;
+            return Path.Combine(_baseFolder, bucket.ToString("X"), id.ToString());
         }
 
         /// <inheritdoc cref="ContainsAsync"/>
@@ -47,12 +74,10 @@ namespace FilesAsAService.Disk
             var fullPath = GetPathToId(id);
             if (File.Exists(fullPath))
                 throw new FaasFileExistsException();
-            
-            using (var output = File.Create(fullPath))
-            {
-                await stream.CopyToAsync(output, cancellationToken);
-                await output.FlushAsync(cancellationToken);
-            }
+
+            await using var output = File.Create(fullPath);
+            await stream.CopyToAsync(output, cancellationToken);
+            await output.FlushAsync(cancellationToken);
         }
 
         /// <inheritdoc cref="ReadAsync"/>

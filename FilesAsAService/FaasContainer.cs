@@ -81,23 +81,23 @@ namespace FilesAsAService
         /// <returns>The contents.</returns>
         public async Task<Stream> ReadAsync(Guid id, Guid? versionId, CancellationToken cancellationToken)
         {
-                var header = await _catalogue.GetAsync(id, cancellationToken);
-                if (header == null)
-                    throw new FaasFileNotFoundException();
-                
-                if (cancellationToken.IsCancellationRequested)
-                    cancellationToken.ThrowIfCancellationRequested();
+            var header = await _catalogue.GetAsync(id, cancellationToken);
+            if (header == null)
+                throw new FaasFileNotFoundException();
 
-                FaasFileHeaderVersion? version;
-                if (versionId != null)
-                    version = header.Versions.FirstOrDefault(v => v.VersionId == versionId);
-                else
-                    version = header.Versions.First(v => v.VersionId == header.VersionId);
-                
-                if (version == null)
-                    throw new FaasFileVersionNotFoundException();
+            if (cancellationToken.IsCancellationRequested)
+                cancellationToken.ThrowIfCancellationRequested();
 
-                return await _fileStore.ReadAsync(version.VersionId, cancellationToken);
+            FaasFileHeaderVersion? version;
+            if (versionId != null)
+                version = header.Versions.FirstOrDefault(v => v.VersionId == versionId);
+            else
+                version = header.Versions.First(v => v.VersionId == header.VersionId);
+
+            if (version == null)
+                throw new FaasFileVersionNotFoundException();
+
+            return await _fileStore.ReadAsync(version.VersionId, cancellationToken);
         }
     }
 }

@@ -23,6 +23,12 @@ namespace FilesAsAService.InMemory
         /// </summary>
         private readonly Semaphore _lock = new Semaphore(1, 1);
 
+        /// <inheritdoc cref="CanRead"/>
+        public bool CanRead => true;
+
+        /// <inheritdoc cref="CanWrite"/>
+        public bool CanWrite => true;
+
         /// <summary>
         /// Creates a new instance with a block size of 1024.
         /// </summary>
