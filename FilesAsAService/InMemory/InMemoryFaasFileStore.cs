@@ -11,7 +11,7 @@ namespace FilesAsAService.InMemory
     /// </summary>
     public class InMemoryFaasFileStore : IFaasFileStore
     {
-        private readonly int _blockSize = 1024;
+        private readonly int _blockSize;
         
         /// <summary>
         /// The files.
@@ -22,6 +22,25 @@ namespace FilesAsAService.InMemory
         /// Lock to protect <see cref="_files"/>.
         /// </summary>
         private readonly Semaphore _lock = new Semaphore(1, 1);
+
+        /// <summary>
+        /// Creates a new instance with a block size of 1024.
+        /// </summary>
+        public InMemoryFaasFileStore() : this(1024)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new instance.
+        /// </summary>
+        /// <param name="blockSize">The block size.</param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public InMemoryFaasFileStore(int blockSize)
+        {
+            if (blockSize < 0) throw new ArgumentOutOfRangeException(nameof(blockSize));
+
+            _blockSize = blockSize;
+        }
 
         /// <inheritdoc cref="ContainsAsync"/>
         public Task<bool> ContainsAsync(Guid id, CancellationToken cancellationToken)

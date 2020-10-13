@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Threading;
+using FilesAsAService.Helpers;
 
 namespace FilesAsAService.InMemory
 {
@@ -34,7 +35,17 @@ namespace FilesAsAService.InMemory
         /// The size of the blocks.
         /// </summary>
         public int BlockSize { get; private set; }
-
+        
+        /// <summary>
+        /// Gets the size of a given block.
+        /// </summary>
+        /// <param name="blockNumber">The block number.</param>
+        /// <returns>The size of the block.</returns>
+        public int GetBlockSize(int blockNumber)
+        {
+            return BlockHelper.GetBlockSize(blockNumber, Length, BlockSize);
+        }
+        
         /// <summary>
         /// Sets the file contents.
         /// </summary>

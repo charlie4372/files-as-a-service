@@ -74,14 +74,10 @@ namespace FilesAsAService.InMemory
                 return 0;
             
             var block = _file.Blocks[_blockIndex];
-
-            var blockSize = _file.Blocks.Count == 1 ? (int)_file.Length
-                : _blockIndex < _file.Blocks.Count - 1 ? _file.BlockSize
-                : (int)(_file.Length - (_file.BlockSize * _blockIndex - 1));
-            
+            var blockSize = _file.GetBlockSize(_blockIndex);
             var bytesToCopy = Math.Min(blockSize - _blockOffset, count);
+            
             Array.Copy(block, _blockOffset, buffer, offset, bytesToCopy);
-
             Seek(bytesToCopy, SeekOrigin.Current);
             
             return bytesToCopy;

@@ -4,10 +4,24 @@ namespace FilesAsAService
 {
     public class FaasFileHeaderVersion
     {
+        private static readonly byte[] EmptyHash = new byte[0];
+        
+        private long _length;
+        private int _blockSize;
+        private int? _numberOfBlocks = null;
+
         public Guid VersionId { get; set; }
-        
-        public long Length { get; set; }
-        
+
+        public long Length
+        {
+            get => _length;
+            set
+            {
+                _length = value;
+                _numberOfBlocks = null;
+            }
+        }
+
         public byte[] Hash { get; set; }
         
         public DateTime DateCreatedUtc { get; set; }
@@ -18,7 +32,7 @@ namespace FilesAsAService
 
         public FaasFileHeaderVersion()
         {
-            Hash = new byte[0];
+            Hash = EmptyHash;
         }
 
         public FaasFileHeaderVersion(FaasFileHeaderVersion copyFrom)
