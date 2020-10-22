@@ -9,7 +9,7 @@ namespace FilesAsAService
     /// <summary>
     /// The container.
     /// </summary>
-    public class FaasContainer
+    public class FaasContainer : IFaasContainer
     {
         /// <summary>
         /// The catalogue.
