@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using FilesAsAService.MessageBus;
 using Moq;
 using NUnit.Framework;
 
@@ -14,17 +15,19 @@ namespace FilesAsAService.UnitTests
         
         private Mock<IFaasCatalogue> _catalogueMock;
         private Mock<IFaasFileStore> _storeMock;
+        private Mock<IFaasMessageBus> _messageBusMock;
 
         [SetUp]
         public void SetUp()
         {
             _catalogueMock = new Mock<IFaasCatalogue>();
             _storeMock = new Mock<IFaasFileStore>();
+            _messageBusMock = new Mock<IFaasMessageBus>();
         }
 
         private FaasContainer CreateContainer()
         {
-            return new FaasContainer(_catalogueMock.Object, _storeMock.Object);
+            return new FaasContainer(_catalogueMock.Object, _storeMock.Object, "test", _messageBusMock.Object);
         }
 
         [Test]

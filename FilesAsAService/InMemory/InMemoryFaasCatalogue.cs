@@ -212,5 +212,44 @@ namespace FilesAsAService.InMemory
                 _lock.Release();
             }
         }
+        
+        /// <inheritdoc cref="RemoveVersionAsync"/>
+        public async Task RemoveVersionAsync(Guid fileId, Guid versionId, CancellationToken cancellationToken)
+        {
+            _lock.WaitOne();
+            try
+            {
+                // Get the header. If its not found, throw.
+                var header = await GetNoLock(fileId, cancellationToken);
+                if (header == null)
+                    throw new FaasFileNotFoundException();
+
+                // Check that the header can be completed.
+                var version = header.Versions.FirstOrDefault(v => v.VersionId == versionId);
+                if (version == null)
+                    throw new FaasFileVersionNotFoundException();
+                if (version.Status == FaasFileHeaderVersionStatus.Writing)
+                    throw new FaasInvalidOperationException();
+                
+                // If there is only one version, the whole header can go.
+                if (header.Versions.Length == 1)
+                {
+                    // Clear the header. 
+                    // Not deleting it since it will mess with indexes.
+                    _data[_fileIdIndex[fileId]] = null;
+
+                    // Delete the index.
+                    _fileIdIndex.Remove(fileId);
+                }
+                else
+                {
+                    header.Versions = header.Versions.Where(v => v.VersionId != version.VersionId).ToArray();
+                }
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
     }
 }

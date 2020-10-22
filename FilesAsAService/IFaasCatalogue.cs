@@ -74,5 +74,17 @@ namespace FilesAsAService
         /// <exception cref="FaasInvalidOperationException">The header can not be completed.</exception>
         /// <returns></returns>
         public Task CancelWritingAsync(Guid fileId, Guid versionId, CancellationToken cancellationToken);
+        
+        /// <summary>
+        /// Removes a version.
+        /// </summary>
+        /// <param name="fileId">The file id.</param>
+        /// /// <param name="versionId">The versionId id.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <exception cref="ArgumentException">Invalid parameters.</exception>
+        /// <exception cref="FaasFileNotFoundException">Invalid id.</exception>
+        /// <exception cref="FaasInvalidOperationException">The header can not be completed.</exception>
+        /// <returns></returns>
+        public Task RemoveVersionAsync(Guid fileId, Guid versionId, CancellationToken cancellationToken);
     }
 }
