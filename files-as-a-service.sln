@@ -12,6 +12,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FilesAsAService.MessageBus.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FilesAsAService.MessageBus.RabbitMQ.IntegrationTests", "FilesAsAService.MessageBus.RabbitMQ.IntegrationTests\FilesAsAService.MessageBus.RabbitMQ.IntegrationTests.csproj", "{A797D7BF-521A-425A-B57B-D69D8A1879E9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FilesAsAService.MongoDb", "FilesAsAService.MongoDb\FilesAsAService.MongoDb.csproj", "{FD2E80E7-E452-4041-B6F9-19207DDF6E2D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FilesAsAService.MongoDb.IntegrationTests", "FilesAsAService.MongoDb.IntegrationTests\FilesAsAService.MongoDb.IntegrationTests.csproj", "{514F574A-90AE-4BC4-97B7-8EA357E68D3D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +46,13 @@ Global
 		{A797D7BF-521A-425A-B57B-D69D8A1879E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A797D7BF-521A-425A-B57B-D69D8A1879E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A797D7BF-521A-425A-B57B-D69D8A1879E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD2E80E7-E452-4041-B6F9-19207DDF6E2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD2E80E7-E452-4041-B6F9-19207DDF6E2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD2E80E7-E452-4041-B6F9-19207DDF6E2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD2E80E7-E452-4041-B6F9-19207DDF6E2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{514F574A-90AE-4BC4-97B7-8EA357E68D3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{514F574A-90AE-4BC4-97B7-8EA357E68D3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{514F574A-90AE-4BC4-97B7-8EA357E68D3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{514F574A-90AE-4BC4-97B7-8EA357E68D3D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

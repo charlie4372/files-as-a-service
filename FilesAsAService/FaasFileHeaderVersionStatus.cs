@@ -5,15 +5,15 @@ namespace FilesAsAService
     public enum FaasFileHeaderVersionStatus
     {
         [EnumMember(Value = "ok")]
-        Ok,
+        Ok = 1,
         
         [EnumMember(Value = "writing")]
-        Writing,
+        Writing = 2,
         
         [EnumMember(Value = "soft-delete")]
-        SoftDelete,
+        SoftDelete = 4,
         
         [EnumMember(Value = "hard-delete")]
-        HardDelete
+        HardDelete = 8
     }
 }
