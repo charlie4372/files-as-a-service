@@ -30,7 +30,7 @@ namespace FilesAsAService.Disk.IntegrationTests
 
         protected override IFaasFileStore CreateFileStore()
         {
-            return new FaasDiskFileStore(_testFolder);
+            return new FaasDiskFileStore("test-disk-store", _testFolder);
         }
     }
 }

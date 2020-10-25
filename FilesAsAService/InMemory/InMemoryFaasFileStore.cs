@@ -23,30 +23,22 @@ namespace FilesAsAService.InMemory
         /// </summary>
         private readonly Semaphore _lock = new Semaphore(1, 1);
 
-        /// <inheritdoc cref="CanRead"/>
-        public bool CanRead => true;
-
-        /// <inheritdoc cref="CanWrite"/>
-        public bool CanWrite => true;
-
-        /// <summary>
-        /// Creates a new instance with a block size of 1024.
-        /// </summary>
-        public InMemoryFaasFileStore() : this(1024)
-        {
-        }
-
         /// <summary>
         /// Creates a new instance.
         /// </summary>
+        /// <param name="name">The name. The message bus will use this to locate it.</param>
         /// <param name="blockSize">The block size.</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public InMemoryFaasFileStore(int blockSize)
+        public InMemoryFaasFileStore(string name, int blockSize = 1024)
         {
+            Name = name ?? throw new ArgumentNullException(nameof(name));
             if (blockSize < 0) throw new ArgumentOutOfRangeException(nameof(blockSize));
 
             _blockSize = blockSize;
         }
+
+        /// <inheritdoc cref="Name"/>
+        public string Name { get; }
 
         /// <inheritdoc cref="ContainsAsync"/>
         public Task<bool> ContainsAsync(Guid id, CancellationToken cancellationToken)

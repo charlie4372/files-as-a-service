@@ -8,7 +8,7 @@ namespace FilesAsAService.UnitTests.InMemory
     {
         protected override IFaasFileStore CreateFileStore()
         {
-            return new InMemoryFaasFileStore();
+            return new InMemoryFaasFileStore("test-inmemory-store");
         }
     }
 }

@@ -11,7 +11,7 @@ namespace FilesAsAService.UnitTests
     public class FaasContainerTests
     {
         private readonly TestDataGenerator _testDataGenerator = new TestDataGenerator();
-        
+
         private Mock<IFaasCatalogue> _catalogueMock;
         private Mock<IFaasFileStore> _storeMock;
 
@@ -21,10 +21,13 @@ namespace FilesAsAService.UnitTests
             _catalogueMock = new Mock<IFaasCatalogue>();
             _storeMock = new Mock<IFaasFileStore>();
         }
-
+        
         private FaasContainer CreateContainer()
         {
-            return new FaasContainer(_catalogueMock.Object, _storeMock.Object);
+            var container = new FaasContainer();
+            container.AddCatalogue(_catalogueMock.Object);
+            container.AddStore(_storeMock.Object);
+            return container;
         }
 
         [Test]
@@ -52,7 +55,7 @@ namespace FilesAsAService.UnitTests
             Assert.AreEqual(fileVersionId.FileId, id);
             
             _catalogueMock.Verify(m => m.StartCreateAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
-            _storeMock.Verify(m => m.CreateAsync(It.Is<Guid>(v => v == fileVersionId.FileId), It.IsAny<Stream>(), It.IsAny<CancellationToken>()), Times.Once);
+            _storeMock.Verify(m => m.CreateAsync(It.Is<Guid>(v => v == fileVersionId.VersionId), It.IsAny<Stream>(), It.IsAny<CancellationToken>()), Times.Once);
             _catalogueMock.Verify(m => m.CompleteWritingAsync(
                     It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
@@ -99,7 +102,7 @@ namespace FilesAsAService.UnitTests
             Assert.IsNotNull(ex);
             
             _catalogueMock.Verify(m => m.StartCreateAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
-            _storeMock.Verify(m => m.CreateAsync(It.Is<Guid>(v => v == fileVersionId.FileId), It.IsAny<Stream>(), It.IsAny<CancellationToken>()), Times.Once);
+            _storeMock.Verify(m => m.CreateAsync(It.Is<Guid>(v => v == fileVersionId.VersionId), It.IsAny<Stream>(), It.IsAny<CancellationToken>()), Times.Once);
             _catalogueMock.Verify(m => m.CompleteWritingAsync(
                     It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
