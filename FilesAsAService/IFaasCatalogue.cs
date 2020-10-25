@@ -11,6 +11,11 @@ namespace FilesAsAService
     public interface IFaasCatalogue
     {
         /// <summary>
+        /// The name. The message bus will use this to locate it.
+        /// </summary>
+        string Name { get; }
+        
+        /// <summary>
         /// Gets a header from the catalogue.
         /// </summary>
         /// <param name="fileId">The file id.</param>

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FilesAsAService.InMemory;
@@ -11,11 +11,8 @@ namespace FilesAsAService.MessageBus.RabbitMQ.IntegrationTests
     public class FaasRabbitMqMessageBusTests
     {
         private TestDataGenerator _testDataGenerator;
-        private InMemoryFaasCatalogue _catalogue;
-        private InMemoryFaasFileStore _fileStore;
         private FaasContainer _container;
         private FaasRabbitMqMessageBus _messageBus;
-        private FaasMessageProcessor _messageProcessor;
         
         [SetUp]
         public void Setup()
@@ -29,13 +26,12 @@ namespace FilesAsAService.MessageBus.RabbitMQ.IntegrationTests
             };
             
             _testDataGenerator = new TestDataGenerator();
-            _fileStore = new InMemoryFaasFileStore();
-            _catalogue = new InMemoryFaasCatalogue();
-            var containers = new List<FaasContainer>();
-            _messageProcessor = new FaasMessageProcessor(containers);
-            _messageBus = new FaasRabbitMqMessageBus(options, _messageProcessor);
-            _container = new FaasContainer(_catalogue, _fileStore, "test", _messageBus);
-            containers.Add(_container);
+            
+            _container = new FaasContainer();
+            _container.AddCatalogue(new InMemoryFaasCatalogue("test-inmemory-catalogue"));
+            _container.AddStore(new InMemoryFaasFileStore("test-inmemory-store"));
+            _messageBus = new FaasRabbitMqMessageBus(options);
+            _messageBus.AddContainer(_container);
         }
 
         [Test]
@@ -46,8 +42,10 @@ namespace FilesAsAService.MessageBus.RabbitMQ.IntegrationTests
             var fileHeader = await _container.GetHeaderAsync(createdFileId, CancellationToken.None);
             Assert.NotNull(fileHeader);
             Assert.NotNull(fileHeader.VersionId);
+
+            var store = _container.Stores.First();
             
-            var fileExists = await _fileStore.ContainsAsync(fileHeader.VersionId.Value, CancellationToken.None);
+            var fileExists = await store.ContainsAsync(fileHeader.VersionId.Value, CancellationToken.None);
             Assert.IsTrue(fileExists);;
             
             var taskCompletion = new TaskCompletionSource<IFaasMessage>();
@@ -59,16 +57,12 @@ namespace FilesAsAService.MessageBus.RabbitMQ.IntegrationTests
                     taskCompletion.SetResult(args.Message);
             };
 
-            var message = new FaasDeleteFileVersionMessageV1(_container.Name, fileHeader.FileId, fileHeader.VersionId.Value);
+            var message = new FaasDeleteFromStoreMessageV1(_container.Stores.First().Name, fileHeader.VersionId.Value);
             await _messageBus.Send(message);
 
             await taskCompletion.Task;
             
-           // Assert.AreEqual(message, taskCompletion.Task.Result);
-            var currentHeader = await _container.GetHeaderAsync(createdFileId, CancellationToken.None);
-            Assert.NotNull(currentHeader);
-            Assert.AreEqual(0, currentHeader.Versions.Length);
-            var currentFileExists = await _fileStore.ContainsAsync(fileHeader.VersionId.Value, CancellationToken.None);
+            var currentFileExists = await store.ContainsAsync(fileHeader.VersionId.Value, CancellationToken.None);
             Assert.IsFalse(currentFileExists);
         }
         
@@ -76,7 +70,7 @@ namespace FilesAsAService.MessageBus.RabbitMQ.IntegrationTests
         public void TearDown()
         {
             _messageBus?.Dispose();
-            _fileStore?.Dispose();
+            _container?.Dispose();
         }
     }
 }

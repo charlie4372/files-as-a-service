@@ -14,7 +14,7 @@ namespace FilesAsAService.UnitTests.InMemory
             
         private IFaasCatalogue CreateCatalogue()
         {
-            return new InMemoryFaasCatalogue();
+            return new InMemoryFaasCatalogue("test-inmemory-catalogue");
         }
         
         [Test]

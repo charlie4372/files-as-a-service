@@ -10,22 +10,41 @@ namespace FilesAsAService.MessageBus.RabbitMQ
 {
     public class FaasRabbitMqMessageBus : IFaasMessageBus, IDisposable
     {
-        private const string DeleteFileQueue = "faas-file-delete-queue";
-        private const string DeleteFileQueueCompleted = "faas-file-delete-queue-completed";
+        /// <summary>
+        /// The name of the delete from store queue.
+        /// </summary>
+        private const string DeleteStoreQueue = "faas-store-delete-queue";
 
+        /// <summary>
+        /// The channel pool.
+        /// </summary>
         private readonly FaasRabbitMqChannelPool _channelPool;
 
-        private readonly IFaasMessageProcessor _messageProcessor;
-
+        /// <summary>
+        /// The consumer channel.
+        /// </summary>
         private IModel? _consumerChannel;
+        
+        /// <summary>
+        /// The message processor.
+        /// </summary>
+        private readonly FaasMessageProcessor _messageProcessor;
 
+        /// <inheritdoc cref="MessageProcessed"/>
         public event FaasMessageEventHandler? MessageProcessed;
 
-        public FaasRabbitMqMessageBus(FaasRabbitMqOptions options, IFaasMessageProcessor messageProcessor)
+        /// <summary>
+        /// Creates a new instance.
+        /// </summary>
+        /// <param name="options">The options.</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public FaasRabbitMqMessageBus(FaasRabbitMqOptions options)
         {
+            _messageProcessor = new FaasMessageProcessor();
+            
             if (options == null) throw new ArgumentNullException(nameof(options));
-            _messageProcessor = messageProcessor ?? throw new ArgumentNullException(nameof(messageProcessor));
 
+            // Create the connection factory.
             var factory = new ConnectionFactory
             {
                 DispatchConsumersAsync = true,
@@ -40,18 +59,29 @@ namespace FilesAsAService.MessageBus.RabbitMQ
             if (options.VirtualHost != null)
                 factory.VirtualHost = options.VirtualHost;
             
+            // Create the pool.
             _channelPool = new FaasRabbitMqChannelPool(factory);
             
             CreateAllQueues();
             CreateConsumer();
         }
 
+        /// <inheritdoc cref="AddContainer"/>
+        public void AddContainer(FaasContainer container)
+        {
+            _messageProcessor.AddContainer(container);
+            container.SetMessageBus(this);
+        }
+
+        /// <summary>
+        /// Creates all of the queues needed.
+        /// </summary>
         private void CreateAllQueues()
         {
             var channel = _channelPool.Rent();
             try
             {
-                channel.QueueDeclare(DeleteFileQueue, true, false, false, null);
+                channel.QueueDeclare(DeleteStoreQueue, true, false, false, null);
             }
             finally
             {
@@ -59,26 +89,40 @@ namespace FilesAsAService.MessageBus.RabbitMQ
             }
         }
 
+        /// <summary>
+        /// Creates the consumer.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">If there is already a consumer created.</exception>
         private void CreateConsumer()
         {
             if (_consumerChannel != null)
                 throw new InvalidOperationException("Consumer channel already exists.");
 
+            // Rent the channel.
             _consumerChannel = _channelPool.Rent();
             _consumerChannel.BasicQos(0, 1, false);
 
-            RegisterConsumer<FaasDeleteFileVersionMessageV1>(_consumerChannel, 
-                DeleteFileQueue,
+            // Register the message and bind it to the processor.
+            RegisterConsumer<FaasDeleteFromStoreMessageV1>(_consumerChannel, 
+                DeleteStoreQueue,
                 (message, cancellationToken) => _messageProcessor.Process(message, cancellationToken));
         }
 
+        /// <summary>
+        /// Registers a consumer for processing messages.
+        /// </summary>
+        /// <param name="channel">The channel to listen on.</param>
+        /// <param name="routingKey">The routing key.</param>
+        /// <param name="action">The action to run.</param>
+        /// <typeparam name="TMessage">The message type.</typeparam>
         private void RegisterConsumer<TMessage>(IModel channel, string routingKey, Func<TMessage, CancellationToken, Task> action)
             where TMessage : IFaasMessage 
         {
-            channel.QueueDeclare(DeleteFileQueue, true, false, false, null);
-            channel.QueueDeclare(DeleteFileQueue + "-completed", true, false, false, null);
+            channel.QueueDeclare(DeleteStoreQueue, true, false, false, null);
+            channel.QueueDeclare(DeleteStoreQueue + "-completed", true, false, false, null);
 
             var consumer = new AsyncEventingBasicConsumer(_consumerChannel);
+            // Define the receive delegate.
             consumer.Received += async (sender, ea) =>
             {
                 var message = ParseJson<TMessage>(ea);
@@ -103,18 +147,20 @@ namespace FilesAsAService.MessageBus.RabbitMQ
                     OnMessageProcessed(message, false, exception);
                 }
             };
+            // Add the consumer to the channel.
             _consumerChannel.BasicConsume(
-                DeleteFileQueue,
+                DeleteStoreQueue,
                 false,
                 consumer);
         }
 
-        public Task Send(FaasDeleteFileVersionMessageV1 versionMessage)
+        /// <inheritdoc cref="Send(FaasDeleteFromStoreMessageV1)"/>
+        public Task Send(FaasDeleteFromStoreMessageV1 fromStoreMessage)
         {
             var channel = _channelPool.Rent();
             try
             {
-                SendJson(channel, DeleteFileQueue, versionMessage);
+                SendJson(channel, DeleteStoreQueue, fromStoreMessage);
             }
             finally
             {
@@ -124,6 +170,10 @@ namespace FilesAsAService.MessageBus.RabbitMQ
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Acknowledges a message.
+        /// </summary>
+        /// <param name="args">The event args.</param>
         private void Acknowledge(BasicDeliverEventArgs args)
         {
             var channel = _channelPool.Rent();
@@ -137,6 +187,10 @@ namespace FilesAsAService.MessageBus.RabbitMQ
             }
         }
         
+        /// <summary>
+        /// Rejects a message.
+        /// </summary>
+        /// <param name="args">The event args.</param>
         private void Reject(BasicDeliverEventArgs args)
         {
             var channel = _channelPool.Rent();
@@ -150,6 +204,12 @@ namespace FilesAsAService.MessageBus.RabbitMQ
             }
         }
 
+        /// <summary>
+        /// Sends a message, as JSON, to a channel.
+        /// </summary>
+        /// <param name="channel">The channel.</param>
+        /// <param name="routingKey">The routing key.</param>
+        /// <param name="message">The message.</param>
         private void SendJson(IModel channel, string routingKey, object message)
         {
             var properties = channel.CreateBasicProperties();
@@ -165,18 +225,31 @@ namespace FilesAsAService.MessageBus.RabbitMQ
                 body: body);
         }
 
+        /// <summary>
+        /// Reads a JSON response from the delivery args.
+        /// </summary>
+        /// <param name="args">The delivery args.</param>
+        /// <typeparam name="TValue">The message.</typeparam>
+        /// <returns>The message.</returns>
         private TValue ParseJson<TValue>(BasicDeliverEventArgs args)
         {
             var bodyString = Encoding.UTF8.GetString(args.Body.ToArray());
             return JsonSerializer.Deserialize<TValue>(bodyString);
         }
 
+        /// <summary>
+        /// Raises the MessageProcessed event.
+        /// </summary>
+        /// <param name="message">The message to send.</param>
+        /// <param name="acknowledged">If the message is acknowledged.</param>
+        /// <param name="exception">Any exception that may have occured.</param>
         private void OnMessageProcessed(IFaasMessage? message, bool acknowledged, Exception? exception)
         {
             FaasMessageEventHandler? handler = MessageProcessed;
             handler?.Invoke(this, new FaasMessageEventArgs(message, acknowledged, exception));
         }
 
+        /// <inheritdoc cref="Dispose"/>
         public void Dispose()
         {
             if (_consumerChannel != null)

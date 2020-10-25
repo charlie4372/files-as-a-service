@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using FilesAsAService.MessageBus;
@@ -11,29 +12,57 @@ namespace FilesAsAService
     /// <summary>
     /// The container.
     /// </summary>
-    public class FaasContainer : IFaasContainer
+    public class FaasContainer : IDisposable
     {
         /// <summary>
         /// The catalogue.
         /// </summary>
-        private readonly IFaasCatalogue _catalogue;
+        private IFaasCatalogue? _catalogue;
         
         /// <summary>
         /// The store.
         /// </summary>
-        private readonly IFaasFileStore _fileStore;
+        private IFaasFileStore? _fileStore;
 
-        private readonly IFaasMessageBus _messageBus;
-        
-        public string Name { get; }
-        
-        public FaasContainer(IFaasCatalogue catalogue, IFaasFileStore fileStore, string name, IFaasMessageBus messageBus)
+        /// <summary>
+        /// The message bus.
+        /// </summary>
+        private IFaasMessageBus? _messageBus;
+
+        /// <summary>
+        /// Sets the message bus.
+        /// </summary>
+        /// <param name="messageBus">The server.</param>
+        public void SetMessageBus(IFaasMessageBus? messageBus)
         {
-            _catalogue = catalogue ?? throw new ArgumentNullException(nameof(catalogue));
+            if (messageBus == null)
+                _messageBus = null;
+            else if (_messageBus != null)
+                throw new InvalidOperationException("Container already has a message bus.");
+            else
+                _messageBus = messageBus;
+        }
+        
+        /// <summary>
+        /// Adds a store to the container.
+        /// </summary>
+        /// <param name="fileStore">The file store.</param>
+        public void AddStore(IFaasFileStore fileStore)
+        {
+            if (_fileStore != null) throw new InvalidOperationException("Container already has a store.");
+            
             _fileStore = fileStore ?? throw new ArgumentNullException(nameof(fileStore));
-            _messageBus = messageBus ?? throw new ArgumentNullException(nameof(messageBus));
+        }
+        
+        /// <summary>
+        /// Adds a catalogue to the container.
+        /// </summary>
+        /// <param name="catalogue">The name in the server.</param>
+        public void AddCatalogue(IFaasCatalogue catalogue)
+        {
+            if (_catalogue != null) throw new InvalidOperationException("Container already has a catalogue.");
 
-            Name = name ?? throw new ArgumentNullException(nameof(name));
+            _catalogue = catalogue ?? throw new ArgumentNullException(nameof(catalogue));
         }
 
         /// <summary>
@@ -45,6 +74,11 @@ namespace FilesAsAService
         /// <returns>The id.</returns>
         public async Task<Guid> CreateAsync(string name, Stream stream, CancellationToken cancellationToken)
         {
+            if (_fileStore == null)
+                throw new InvalidOperationException("No store set.");
+            if (_catalogue == null)
+                throw new InvalidOperationException("No catalogue set.");
+            
             FaasFileVersionId? fileVersionId = null;
             try
             {
@@ -70,15 +104,10 @@ namespace FilesAsAService
             catch
             {
                 // Delete the file.
-                if (fileVersionId != null)
+                if (_messageBus != null)
                 {
-                    await _messageBus.Send(new FaasDeleteFileVersionMessageV1
-                    {
-                        Container = Name,
-                        DateCreatedUtc = DateTime.UtcNow,
-                        FileId = fileVersionId.Value.FileId,
-                        VersionId = fileVersionId.Value.VersionId
-                    });
+                    if (fileVersionId != null)
+                        await _messageBus.Send(new FaasDeleteFromStoreMessageV1(_fileStore.Name, fileVersionId.Value.VersionId));
                 }
 
                 // Something has gone wrong, so clean up the catalogue.
@@ -100,6 +129,11 @@ namespace FilesAsAService
         /// <returns>The contents.</returns>
         public async Task<Stream> ReadAsync(Guid id, Guid? versionId, CancellationToken cancellationToken)
         {
+            if (_fileStore == null)
+                throw new InvalidOperationException("No store set.");
+            if (_catalogue == null)
+                throw new InvalidOperationException("No catalogue set.");
+            
             var header = await _catalogue.GetAsync(id, cancellationToken);
             if (header == null)
                 throw new FaasFileNotFoundException();
@@ -121,51 +155,34 @@ namespace FilesAsAService
         
         public ValueTask<FaasFileHeader?> GetHeaderAsync(Guid fileId, CancellationToken cancellationToken)
         {
+            if (_catalogue == null)
+                throw new InvalidOperationException("No catalogue set.");
             return _catalogue.GetAsync(fileId, cancellationToken);
         }
 
         public  ValueTask<IEnumerable<FaasFileHeader>> ListHeadersAsync(int pageNumber, CancellationToken cancellationToken)
         {
+            if (_catalogue == null)
+                throw new InvalidOperationException("No catalogue set.");
             return _catalogue.ListAsync(pageNumber, cancellationToken);
         }
 
-        public async Task<bool> HasFileAsync(Guid id, Guid? versionId, CancellationToken cancellationToken)
+        /// <summary>
+        /// The stores.
+        /// </summary>
+        public IEnumerable<IFaasFileStore> Stores => _fileStore == null ? new IFaasFileStore[0] : new[] {_fileStore};
+
+        /// <summary>
+        /// The catalogues.
+        /// </summary>
+        public IEnumerable<IFaasCatalogue> Catalogues => _catalogue == null ? new IFaasCatalogue[0] : new[] {_catalogue};
+
+        /// <inheritdoc cref="Dispose"/>
+        public void Dispose()
         {
-            var header = await _catalogue.GetAsync(id, cancellationToken);
-            if (header == null)
-                return false;
-
-            if (cancellationToken.IsCancellationRequested)
-                cancellationToken.ThrowIfCancellationRequested();
-
-            FaasFileHeaderVersion? version;
-            if (versionId != null)
-                version = header.Versions.FirstOrDefault(v => v.VersionId == versionId);
-            else
-                version = header.Versions.First(v => v.VersionId == header.VersionId);
-
-            return version != null;
-        }
-
-        public async Task DeleteFileAsync(Guid id, Guid? versionId, CancellationToken cancellationToken)
-        {
-            var header = await _catalogue.GetAsync(id, cancellationToken);
-            if (header == null)
-                throw new FaasFileNotFoundException();
-
-            if (cancellationToken.IsCancellationRequested)
-                cancellationToken.ThrowIfCancellationRequested();
-
-            FaasFileHeaderVersion? version;
-            if (versionId != null)
-                version = header.Versions.FirstOrDefault(v => v.VersionId == versionId);
-            else
-                version = header.Versions.First(v => v.VersionId == header.VersionId);
-
-            if (version == null)
-                throw new FaasFileVersionNotFoundException();
-
-            await _fileStore.DeleteAsync(version.VersionId, cancellationToken);
+            _fileStore?.Dispose();
+            
+            GC.SuppressFinalize(this);
         }
     }
 }

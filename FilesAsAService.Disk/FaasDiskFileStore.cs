@@ -20,31 +20,19 @@ namespace FilesAsAService.Disk
         /// </summary>
         private readonly int _numberOfBuckets;
 
-        /// <inheritdoc cref="CanRead"/>
-        public bool CanRead => true;
-
-        /// <inheritdoc cref="CanWrite"/>
-        public bool CanWrite => true;
-
         /// <summary>
         /// Creates a new instance.
         /// </summary>
-        /// <param name="baseFolder">The base folder of the files.</param>
-        public FaasDiskFileStore(string baseFolder) : this(baseFolder, 0)
-        {
-        }
-
-        /// <summary>
-        /// Creates a new instance.
-        /// </summary>
+        /// <param name="name">The name. The message bus will use this to locate it.</param>
         /// <param name="baseFolder">The base folder of the files.</param>
         /// <param name="numberOfBuckets">The number of buckets to use. Use 0 to disable buckets.</param>
-        public FaasDiskFileStore(string baseFolder, int numberOfBuckets)
+        public FaasDiskFileStore(string name, string baseFolder, int numberOfBuckets = 0)
         {
             if (numberOfBuckets < 0) throw new ArgumentOutOfRangeException(nameof(numberOfBuckets));
-            
+
             _baseFolder = baseFolder;
             _numberOfBuckets = numberOfBuckets;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
         }
 
         /// <summary>
@@ -60,6 +48,9 @@ namespace FilesAsAService.Disk
             var bucket = id.GetHashCode() % _numberOfBuckets;
             return Path.Combine(_baseFolder, bucket.ToString("X"), id.ToString());
         }
+
+        /// <inheritdoc cref="Name"/>summary>
+        public string Name { get; }
 
         /// <inheritdoc cref="ContainsAsync"/>
         public Task<bool> ContainsAsync(Guid id, CancellationToken cancellationToken)
@@ -105,6 +96,7 @@ namespace FilesAsAService.Disk
         /// <inheritdoc cref="Dispose"/>
         public void Dispose()
         {
+            GC.SuppressFinalize(this);
         }
     }
 }

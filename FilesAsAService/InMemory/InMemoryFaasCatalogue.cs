@@ -27,8 +27,24 @@ namespace FilesAsAService.InMemory
         /// TODO think about cleaning this up vs back filling the gaps.
         /// </summary>
         private readonly List<FaasFileHeader?> _data = new List<FaasFileHeader?>();
-        private readonly Dictionary<Guid, int> _fileIdIndex = new Dictionary<Guid, int>();
         
+        /// <summary>
+        /// The index for files by id.
+        /// </summary>
+        private readonly Dictionary<Guid, int> _fileIdIndex = new Dictionary<Guid, int>();
+
+        /// <inheritdoc cref="Name"/>
+        public string Name { get; }
+
+        /// <summary>
+        /// Creates a new instance.
+        /// </summary>
+        /// <param name="name">The name. The message bus will use this to locate it.</param>
+        public InMemoryFaasCatalogue(string name)
+        {
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+        }
+
         /// <inheritdoc cref="GetAsync"/>
         public ValueTask<FaasFileHeader?> GetAsync(Guid fileId, CancellationToken cancellationToken)
         {
